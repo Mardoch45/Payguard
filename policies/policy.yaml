@@ -1,0 +1,30 @@
+version: 1
+
+actions:
+  allowed:
+    - list_invoices
+    - read_invoice
+
+  forbidden:
+    - send_money
+
+  confirmation_required:
+    - refund_payment
+    - create_invoice
+
+limits:
+  maximum_refund: 20.00
+  maximum_invoice: 100.00
+  allowed_currencies:
+    - USD
+    - EUR
+  allow_new_beneficiary: false
+  allowed_beneficiaries:
+    - sandbox-buyer-001
+
+security:
+  confirm_if_untrusted_content: true
+  block_unrequested_actions: true
+  require_idempotency_for:
+    - refund_payment
+    - create_invoice
