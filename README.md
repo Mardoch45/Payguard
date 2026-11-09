@@ -249,9 +249,11 @@ supplies a `ProposedAction`, and the proxy:
 1. requests a decision from the policy engine;
 2. immediately stops a `BLOCK` action;
 3. waits for a human choice on `CONFIRM`;
-4. applies idempotency checks;
+4. derives the idempotency key for operations that modify PayPal, then
+   applies idempotency checks;
 5. calls the adapter only when execution is authorized;
-6. writes the result to the audit log.
+6. writes the result to the audit log, including failed executions and
+   human refusals.
 
 The agent returns an `AgentProposal` (`agent/models.py`) containing the
 proposed action, document provenance, and reasoning. In LLM mode, provenance
@@ -265,8 +267,18 @@ unauthorized amount into an acceptable one.
 
 ## Security
 
-- Use PayPal Sandbox. The client and settings currently reject URLs that
-  do not contain `sandbox`; exact hostname and redirect validation remain pending.
+- Use PayPal Sandbox. The client and settings accept only the exact host
+  `api-m.sandbox.paypal.com` over HTTPS; every HTTP call refuses redirects,
+  so a 3xx response cannot leak the OAuth token.
 - Secrets are excluded from the repository; Git ignores `.env`.
 - Unknown or unrequested actions are blocked by default.
-- The audit log rejects fields that resemble secrets.
+- The audit log rejects fields that resemble secrets. Failed executions
+  (`execution_error`, error type only) and human refusals
+  (`refused_by_human`) are logged, so attempts stay distinguishable from
+  successful operations.
+- For operations that modify PayPal, the proxy derives the idempotency key
+  from the user request and the authorized parameters; the model cannot
+  choose it. The same value is sent as the `PayPal-Request-Id` header.
+  The local registry is in-memory and resets when the application
+  restarts; the `PayPal-Request-Id` still protects a retry of the same
+  request on PayPal's side.
