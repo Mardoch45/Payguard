@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 
 from guard.execution import process_action, record_human_refusal
-from guard.idempotency import IdempotencyRegistry
+from guard.idempotency import (
+    IdempotencyConflictError,
+    IdempotencyRegistry,
+    derive_idempotency_key,
+)
 from guard.models import (
     Decision,
     ProposedAction,
@@ -146,36 +150,53 @@ def test_duplicate_action_reuses_result_without_second_call(tmp_path: Path) -> N
     assert len(adapter.calls) == 1
 
 
-def test_reused_key_for_different_action_is_blocked(tmp_path: Path) -> None:
+def test_registry_rejects_a_reused_key_for_a_different_action() -> None:
+    registry = IdempotencyRegistry()
+    registry.record(
+        refund_action(idempotency_key="refund-execution-001"), {"status": "ok"}
+    )
+
+    with pytest.raises(IdempotencyConflictError):
+        registry.find(
+            refund_action(idempotency_key="refund-execution-001", amount=10.00)
+        )
+
+
+def test_proxy_derives_the_key_and_neutralizes_the_proposed_one(tmp_path: Path) -> None:
     adapter = FakePayPalAdapter()
     registry = IdempotencyRegistry()
+    audit_path = tmp_path / "audit.jsonl"
 
-    process_action(
+    first = process_action(
         request("refund_payment"),
-        refund_action(),
+        refund_action(idempotency_key="KEY-A"),
         POLICY,
         ProvenanceContext(),
         adapter,
         registry,
-        tmp_path / "audit.jsonl",
+        audit_path,
         human_confirmed=True,
     )
-    conflict = process_action(
-        replace(request("refund_payment"), constraints=replace(
-            request("refund_payment").constraints, amount=10.00
-        )),
-        refund_action(amount=10.00),
+    second = process_action(
+        request("refund_payment"),
+        refund_action(idempotency_key="KEY-B"),
         POLICY,
         ProvenanceContext(),
         adapter,
         registry,
-        tmp_path / "audit.jsonl",
+        audit_path,
         human_confirmed=True,
     )
 
-    assert conflict.executed is False
-    assert conflict.policy_decision.decision is Decision.BLOCK
-    assert conflict.policy_decision.rule_id == "idempotency.key_conflict"
+    expected_key = derive_idempotency_key(
+        request("refund_payment"), refund_action(idempotency_key="KEY-A")
+    )
+    assert adapter.calls[0].idempotency_key == expected_key
+    assert adapter.calls[0].idempotency_key != "KEY-A"
+    assert first.executed is True
+    assert second.executed is False
+    assert second.duplicate is True
+    assert second.result == first.result
     assert len(adapter.calls) == 1
 
 

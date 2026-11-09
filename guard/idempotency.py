@@ -3,7 +3,7 @@ import json
 from dataclasses import asdict
 from typing import Any
 
-from guard.models import ProposedAction
+from guard.models import ProposedAction, UserRequest
 
 
 class IdempotencyConflictError(ValueError):
@@ -43,6 +43,31 @@ class IdempotencyRegistry:
             _action_fingerprint(action),
             result.copy(),
         )
+
+
+def derive_idempotency_key(request: UserRequest, action: ProposedAction) -> str:
+    """Clé déterministe calculée par l'application, jamais par le modèle.
+
+    La même demande rejouée produit la même clé : l'anti-rejeu ne peut pas
+    être contourné en changeant la clé fournie par un appel d'outil.
+    """
+
+    material = json.dumps(
+        {
+            "request_id": request.request_id,
+            "tool": action.tool,
+            "amount": action.amount,
+            "currency": action.currency,
+            "beneficiary": action.beneficiary,
+            "invoice_id": action.metadata.get("invoice_id"),
+            "capture_id": action.metadata.get("capture_id"),
+        },
+        sort_keys=True,
+        default=str,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()[:12]
+    return f"{request.request_id}-{digest}"
 
 
 def _action_fingerprint(action: ProposedAction) -> str:

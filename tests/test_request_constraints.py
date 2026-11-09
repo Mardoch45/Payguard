@@ -9,7 +9,7 @@ import pytest
 from adapters.fake import FakePayPalAdapter
 from app.scenarios import load_all_scenarios, prepare_sandbox_scenario
 from guard.execution import process_action
-from guard.idempotency import IdempotencyRegistry
+from guard.idempotency import IdempotencyRegistry, derive_idempotency_key
 from guard.models import Decision, ProposedAction, ProvenanceContext, RequestConstraints, UserRequest
 from guard.policy import evaluate_action, load_policy
 
@@ -61,7 +61,9 @@ def test_matching_parameters_wait_for_confirmation_then_execute_once(tmp_path: P
     duplicate = process_action(*arguments, human_confirmed=True)
     assert approved.executed
     assert duplicate.duplicate
-    assert adapter.calls == [ACTION]
+    assert adapter.calls == [
+        replace(ACTION, idempotency_key=derive_idempotency_key(REQUEST, ACTION))
+    ]
 
 
 @pytest.mark.parametrize("constraints", [None, RequestConstraints(), replace(CONSTRAINTS, amount=None)])

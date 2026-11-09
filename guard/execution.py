@@ -1,10 +1,14 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
 from guard.audit import write_audit_event
-from guard.idempotency import IdempotencyConflictError, IdempotencyRegistry
+from guard.idempotency import (
+    IdempotencyConflictError,
+    IdempotencyRegistry,
+    derive_idempotency_key,
+)
 from guard.models import (
     Decision,
     PolicyDecision,
@@ -71,6 +75,14 @@ def process_action(
         return ExecutionOutcome(decision, executed=False)
 
     read_only = proposed_action.tool in READ_ONLY_TOOLS
+    if not read_only:
+        # La clé effective est toujours dérivée par l'application à partir
+        # de la demande autorisée : une clé fournie par le modèle ne peut
+        # pas contourner la protection contre les doubles exécutions.
+        proposed_action = replace(
+            proposed_action,
+            idempotency_key=derive_idempotency_key(user_request, proposed_action),
+        )
     try:
         previous_result = None if read_only else idempotency_registry.find(proposed_action)
     except IdempotencyConflictError as error:

@@ -2,6 +2,7 @@
 
 ``sources`` permet à l'agent d'expliquer les documents cités. La provenance
 de sécurité est établie côté application à partir des documents fournis.
+La clé d'idempotence n'est jamais exposée : le proxy la dérive lui-même.
 """
 
 SOURCES_SCHEMA = {
@@ -55,7 +56,6 @@ TOOL_SCHEMAS = [
                     "recipient_email": {"type": "string"},
                     "item_name": {"type": "string"},
                     "reason": {"type": "string"},
-                    "idempotency_key": {"type": "string"},
                     "sources": SOURCES_SCHEMA,
                 },
                 "required": ["amount", "currency", "beneficiary", "sources"],
@@ -75,7 +75,6 @@ TOOL_SCHEMAS = [
                     "beneficiary": {"type": "string"},
                     "capture_id": {"type": "string"},
                     "reason": {"type": "string"},
-                    "idempotency_key": {"type": "string"},
                     "sources": SOURCES_SCHEMA,
                 },
                 "required": ["amount", "currency", "beneficiary", "sources"],
