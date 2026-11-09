@@ -2,6 +2,14 @@
 
 Date : 3 novembre 2026. Périmètre : fichiers présents ici, tests locaux et exigences du hackathon fournies dans la conversation. Les règles officielles complètes, les comptes et les livrables éventuellement publiés ailleurs ne sont pas vérifiés.
 
+## Suivi du 5 novembre 2026
+
+Le socle a été commité puis poussé sur [GitHub](https://github.com/Mardoch45/Payguard), branche `main`, commit initial `cc22736`. Le fichier `.env`, l'environnement virtuel et l'audit local sont exclus du dépôt ; les fichiers indexés ont été vérifiés contre les clés locales avant ce commit.
+
+Le chargement d'une facture Sandbox avant l'appel au modèle a ensuite été ajouté localement. Il passe par la politique et l'audit, contrôle l'identifiant retourné et transmet les champs affichés (identifiant, numéro, statut, montant, devise, note) avec la provenance `PAYPAL_DATA`. Les coordonnées structurées du client sont omises. La note remplace le texte externe du scénario, sans modifier les droits de la demande. Un changement de facture ou un échec de rechargement efface le document et le résultat précédents.
+
+**132 tests locaux réussis**, dont le blocage d'un remboursement non demandé proposé à partir d'une note PayPal simulée, le suivi de la source malgré une citation de l'utilisateur seul et la confirmation d'une lecture autorisée. Aucun appel réseau réel n'a été effectué pour cette nouvelle fonction : sa validation contre la facture du participant et Gemini reste à faire. Une lecture de préparation peut avoir eu lieu même si l'action du modèle est ensuite bloquée ; l'interface distingue désormais cette lecture de l'exécution de l'outil proposé.
+
 ## Suivi du 4 novembre 2026
 
 Le participant confirme la lecture de sa première facture de test dans l'interface, avec **LLM → PayPal Sandbox → normal-list-001**. Le parcours réel de lecture avec Gemini et PayPal est validé dans son environnement ; il n'a pas été relancé contre les services externes lors de cette mise à jour. La suite locale compte désormais **78 tests réussis**, vérifiés avec `.venv/bin/python -m pytest -q --tb=no`.

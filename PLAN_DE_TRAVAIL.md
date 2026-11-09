@@ -1,12 +1,12 @@
 # Plan de livraison — PayGuard
 
-Mis à jour le 4 novembre 2026 après validation de la lecture d'une facture Sandbox par le participant. L'[audit initial](AUDIT_HACKATHON.md) date du 3 novembre.
+Mis à jour le 5 novembre 2026 après publication du socle sur [GitHub](https://github.com/Mardoch45/Payguard) et ajout du chargement d'une note PayPal dans l'interface. L'[audit initial](AUDIT_HACKATHON.md) date du 3 novembre.
 
 **Objectif :** soumettre le 11 novembre un prototype reproductible utilisant réellement un modèle IA et PayPal Sandbox. D'après les exigences fournies, clôture le 12 novembre 2026 à 21 h GMT+1, soit 21 h au Bénin. Vérifier l'échéance sur Devpost avant soumission.
 
 ## Point de départ vérifié
 
-Le socle existe : moteur, provenance, proxy, confirmation, audit, adaptateurs, client LLM et interface. **117 tests locaux passent**, vérifiés le 4 novembre avec `.venv/bin/python -m pytest -q --tb=short` après ajout des contraintes de demande ; les appels réseau de ces tests sont simulés.
+Le socle existe : moteur, provenance, proxy, confirmation, audit, adaptateurs, client LLM et interface. **132 tests locaux passent**, vérifiés le 5 novembre avec `.venv/bin/python -m pytest -q --tb=short` après ajout du chargement d'une facture avant le modèle ; les appels réseau de ces tests sont simulés.
 
 Le participant confirme que sa facture de test apparaît dans PayGuard avec **LLM → PayPal Sandbox → normal-list-001**. Le parcours **Gemini → PayGuard → lecture PayPal Sandbox** est donc validé dans son environnement. Les accès Google AI Studio, l'authentification PayPal, le droit Invoicing et la préparation d'une première facture ne sont plus des prérequis ouverts. Cette validation ne couvre pas encore un remboursement réel ni la lecture d'une note PayPal par le modèle.
 
@@ -18,7 +18,9 @@ Les anciennes étapes de création du socle sont terminées. Le travail restant 
 
 Les contraintes de demande sont maintenant implémentées : une demande de 5 USD bloque une proposition de 15 USD ; une capture ou une adresse e-mail différente de celle choisie est aussi bloquée. Vérifier dans l'interface **Scripté → Simulateur local → attack-request-amount-001** : décision `BLOCK`, règle `intent.amount_mismatch`, aucun appel à l'adaptateur protégé. Les scénarios `attack-capture-001` et `attack-invoice-recipient-001` montrent aussi les cibles modifiées. Ces propositions sont scriptées.
 
-Le jalon suivant est de charger la note de la facture Sandbox dans le modèle, puis de préparer un paiement capturé pour une démonstration de remboursement légitime. La sélection explicite d'une capture autorise cet objet précis ; la correspondance entre son payeur réel et l'alias local n'est pas encore résolue automatiquement.
+Le chargement de la note est maintenant implémenté. Choisir **LLM → PayPal Sandbox → normal-read-001**, renseigner `invoice_id`, activer **Utiliser la note de la facture PayPal** puis **Charger la facture PayPal**. Vérifier le document affiché et exécuter le scénario. La lecture de préparation passe par PayGuard et son audit ; le document envoyé au modèle porte la provenance `PAYPAL_DATA`. Une lecture admissible après réception de ce document exige une confirmation selon la politique actuelle. Les tests utilisent des réponses simulées ; le parcours réel de cette nouvelle fonction attend un essai dans la Sandbox du participant.
+
+Le jalon suivant sera un paiement capturé pour une démonstration de remboursement légitime. La sélection explicite d'une capture autorise cet objet précis ; la correspondance entre son payeur réel et l'alias local n'est pas encore résolue automatiquement.
 
 Conserver localement l'identifiant de la facture créée pour le prochain parcours de lecture de sa note réelle. Une facture en brouillon ne fournit pas de capture à rembourser : le parcours de remboursement exigera un paiement Sandbox capturé.
 
@@ -72,7 +74,8 @@ Les accès du participant conditionnent les premières étapes. Les dates sont d
 - [x] Établir l'exposition aux documents externes indépendamment des citations du LLM.
 - [ ] Vérifier HTTPS et l'hôte PayPal Sandbox exact ; empêcher les redirections vers un autre hôte.
 - [x] Rejeter les montants non finis/invalides et les fractions de centime pour USD/EUR.
-- [ ] Charger au moins une note réelle depuis PayPal.
+- [x] Implémenter le chargement contrôlé d'une facture et de sa note avant l'appel au modèle.
+- [ ] Valider ce chargement avec une note réelle depuis PayPal et Gemini.
 - [x] Isoler les erreurs des parcours avec et sans protection.
 - [ ] Journaliser refus humains et erreurs en distinguant tentative et succès.
 - [x] Afficher les paramètres effectifs lors de la confirmation.
