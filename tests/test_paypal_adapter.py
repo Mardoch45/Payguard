@@ -72,6 +72,33 @@ def test_client_rejects_non_sandbox_url() -> None:
         PayPalClient("id", "secret", base_url="https://api-m.paypal.com")
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://sandbox.evil.com",
+        "https://evil.com/?u=sandbox",
+        "http://api-m.sandbox.paypal.com",
+        "https://api-m.sandbox.paypal.com.evil.com",
+    ],
+)
+def test_client_rejects_any_url_outside_the_official_sandbox_host(url: str) -> None:
+    with pytest.raises(ValueError):
+        PayPalClient("id", "secret", base_url=url)
+
+
+def test_requests_never_follow_redirects() -> None:
+    adapter, session = make_adapter(
+        [token_response(), FakeResponse(200, {"items": []})]
+    )
+
+    adapter.execute(ProposedAction(tool="list_invoices"))
+
+    assert session.calls, "le client doit avoir appelé PayPal"
+    assert all(
+        call[2].get("allow_redirects") is False for call in session.calls
+    ), "chaque appel doit refuser les redirections"
+
+
 def test_invoice_listing_uses_oauth_token() -> None:
     adapter, session = make_adapter(
         [

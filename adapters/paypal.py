@@ -2,7 +2,8 @@
 
 L'adaptateur est la seule couche autorisée à parler à PayPal. Il
 n'accepte que les actions prévues par la politique locale, refuse tout
-outil inconnu et vérifie que l'URL cible reste la sandbox.
+outil inconnu, vérifie que l'URL cible est exactement l'hôte sandbox
+officiel en HTTPS et refuse de suivre les redirections.
 
 Endpoints utilisés (API REST PayPal v2) :
 - ``GET  /v2/invoicing/invoices``                    lister les factures
@@ -21,7 +22,7 @@ from urllib.parse import quote
 import requests
 
 from guard.models import ProposedAction
-from guard.settings import SANDBOX_BASE_URL
+from guard.settings import SANDBOX_BASE_URL, validate_sandbox_base_url
 
 TOKEN_PATH = "/v1/oauth2/token"
 INVOICES_PATH = "/v2/invoicing/invoices"
@@ -65,11 +66,8 @@ class PayPalClient:
         session: requests.Session | None = None,
         timeout: float = 20.0,
     ) -> None:
-        if "sandbox" not in base_url.lower():
-            raise ValueError(
-                "L'adaptateur PayPal refuse toute URL hors sandbox : "
-                f"{base_url!r}."
-            )
+        # Hôte exact et HTTPS : un sous-texte « sandbox » ne suffit pas.
+        validate_sandbox_base_url(base_url)
         if not client_id or not client_secret:
             raise ValueError("Identifiants PayPal Sandbox manquants.")
 
@@ -106,6 +104,8 @@ class PayPalClient:
             params=params,
             headers=headers,
             timeout=self._timeout,
+            # Une redirection vers un autre hôte divulguerait le jeton Bearer.
+            allow_redirects=False,
         )
         payload = _safe_json(response)
 
@@ -126,6 +126,7 @@ class PayPalClient:
             data={"grant_type": "client_credentials", "ignoreCache": "true"},
             headers={"Accept": "application/json"},
             timeout=self._timeout,
+            allow_redirects=False,
         )
         payload = _safe_json(response)
         if response.status_code != 200 or "access_token" not in payload:

@@ -45,6 +45,20 @@ def test_settings_refuse_non_sandbox_url() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://sandbox.evil.com",
+        "https://evil.com/?u=sandbox",
+        "http://api-m.sandbox.paypal.com",
+        "https://api-m.sandbox.paypal.com.evil.com",
+    ],
+)
+def test_settings_refuse_any_url_outside_the_official_sandbox_host(url: str) -> None:
+    with pytest.raises(ConfigurationError):
+        Settings(paypal_base_url=url)
+
+
 def test_settings_require_both_credentials() -> None:
     with pytest.raises(ConfigurationError):
         Settings(paypal_client_id="id")
