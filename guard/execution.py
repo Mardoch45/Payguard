@@ -107,7 +107,22 @@ def process_action(
             duplicate=True,
         )
 
-    execution_result = adapter.execute(proposed_action)
+    try:
+        execution_result = adapter.execute(proposed_action)
+    except Exception as error:
+        # Une tentative qui échoue doit rester visible. On journalise le type
+        # d'erreur uniquement : le message brut peut contenir des données PayPal.
+        _audit(
+            audit_path,
+            user_request,
+            proposed_action,
+            decision,
+            provenance,
+            paypal_called=True,
+            result="execution_error",
+            error=type(error).__name__,
+        )
+        raise
     if not read_only:
         idempotency_registry.record(proposed_action, execution_result)
     _audit(
@@ -122,16 +137,15 @@ def process_action(
     return ExecutionOutcome(decision, executed=True, result=execution_result)
 
 
-def _audit(
-    audit_path: str | Path,
+def record_human_refusal(
     user_request: UserRequest,
     proposed_action: ProposedAction,
-    decision: PolicyDecision,
+    policy_decision: PolicyDecision,
     provenance: ProvenanceContext,
-    *,
-    paypal_called: bool,
-    result: str,
+    audit_path: str | Path,
 ) -> None:
+    """Journalise le refus d'une opération confirmable avant tout appel adaptateur."""
+
     write_audit_event(
         audit_path,
         {
@@ -142,11 +156,42 @@ def _audit(
             "amount": proposed_action.amount,
             "currency": proposed_action.currency,
             "beneficiary": proposed_action.beneficiary,
-            "decision": decision.decision.value,
-            "rule_id": decision.rule_id,
-            "risk_factors": list(decision.risk_factors),
+            "decision": policy_decision.decision.value,
+            "rule_id": policy_decision.rule_id,
+            "risk_factors": list(policy_decision.risk_factors),
             "untrusted_source_ids": list(provenance.untrusted_source_ids),
-            "paypal_called": paypal_called,
-            "result": result,
+            "paypal_called": False,
+            "result": "refused_by_human",
         },
     )
+
+
+def _audit(
+    audit_path: str | Path,
+    user_request: UserRequest,
+    proposed_action: ProposedAction,
+    decision: PolicyDecision,
+    provenance: ProvenanceContext,
+    *,
+    paypal_called: bool,
+    result: str,
+    error: str | None = None,
+) -> None:
+    event = {
+        "timestamp": datetime.now(UTC).isoformat(),
+        "request_id": user_request.request_id,
+        "user_request": user_request.text,
+        "proposed_tool": proposed_action.tool,
+        "amount": proposed_action.amount,
+        "currency": proposed_action.currency,
+        "beneficiary": proposed_action.beneficiary,
+        "decision": decision.decision.value,
+        "rule_id": decision.rule_id,
+        "risk_factors": list(decision.risk_factors),
+        "untrusted_source_ids": list(provenance.untrusted_source_ids),
+        "paypal_called": paypal_called,
+        "result": result,
+    }
+    if error is not None:
+        event["error"] = error
+    write_audit_event(audit_path, event)
