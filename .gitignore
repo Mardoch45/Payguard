@@ -7,4 +7,3 @@ __pycache__/
 !.env.example
 *.log
 data/audit.jsonl
-./PLAN_DE_TRAVAIL.md
