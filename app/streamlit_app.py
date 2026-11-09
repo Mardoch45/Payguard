@@ -25,6 +25,7 @@ from agent.scripted import ScriptedAgent  # noqa: E402
 from app.demo import run_with_protection, run_without_protection  # noqa: E402
 from app.invoice_documents import load_invoice_document  # noqa: E402
 from app.scenarios import Scenario, load_all_scenarios, prepare_sandbox_scenario  # noqa: E402
+from guard.execution import record_human_refusal  # noqa: E402
 from guard.idempotency import IdempotencyRegistry  # noqa: E402
 from guard.models import Decision, UserRequest  # noqa: E402
 from guard.policy import load_policy  # noqa: E402
@@ -209,6 +210,16 @@ def show_protected(outcome: Any, run: dict[str, Any]) -> None:
             except Exception as error:
                 st.error(f"Échec de l'exécution après confirmation : {error}")
         if refuse.button("Refuser", key=f"refuse-{run['scenario']}"):
+            try:
+                record_human_refusal(
+                    run["proposal"].request,
+                    run["proposal"].action,
+                    run["outcome"].policy_decision,
+                    run["proposal"].provenance,
+                    run["audit_path"],
+                )
+            except Exception as error:
+                st.error(f"Journalisation du refus impossible : {error}")
             run["refused"] = True
             st.rerun()
     elif not outcome.executed:

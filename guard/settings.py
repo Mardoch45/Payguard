@@ -8,17 +8,36 @@ l'URL PayPal reste celle de la sandbox.
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 PROJECT_ROOT = Path(__file__).parents[1]
 DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
 DEFAULT_AUDIT_PATH = PROJECT_ROOT / "data" / "audit.jsonl"
 SANDBOX_BASE_URL = "https://api-m.sandbox.paypal.com"
+SANDBOX_API_HOST = "api-m.sandbox.paypal.com"
 DEFAULT_LLM_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 DEFAULT_LLM_MODEL = "gemini-3.5-flash-lite"
 
 
 class ConfigurationError(ValueError):
     """Configuration invalide ou dangereuse."""
+
+
+def validate_sandbox_base_url(base_url: str) -> str:
+    """N'accepte que l'hôte sandbox PayPal officiel, en HTTPS.
+
+    Un simple sous-texte « sandbox » suffit à tromper une validation par
+    sous-chaîne : ``https://sandbox.evil.com`` ou ``https://evil.com/?u=sandbox``
+    seraient acceptés. La vérification porte donc sur le nom d'hôte exact.
+    """
+
+    parsed = urlparse(str(base_url))
+    if parsed.scheme != "https" or parsed.hostname != SANDBOX_API_HOST:
+        raise ConfigurationError(
+            "PayGuard n'accepte que l'hôte sandbox PayPal officiel en HTTPS : "
+            f"https://{SANDBOX_API_HOST} (URL reçue : {base_url!r})."
+        )
+    return base_url.rstrip("/")
 
 
 def load_env_file(path: str | Path = DEFAULT_ENV_PATH) -> None:
@@ -57,11 +76,7 @@ class Settings:
     audit_path: Path = DEFAULT_AUDIT_PATH
 
     def __post_init__(self) -> None:
-        if "sandbox" not in self.paypal_base_url.lower():
-            raise ConfigurationError(
-                "PayGuard refuse toute URL PayPal hors sandbox : "
-                f"{self.paypal_base_url!r}."
-            )
+        validate_sandbox_base_url(self.paypal_base_url)
         if bool(self.paypal_client_id) != bool(self.paypal_client_secret):
             raise ConfigurationError(
                 "PAYPAL_CLIENT_ID et PAYPAL_CLIENT_SECRET doivent être "

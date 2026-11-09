@@ -7,6 +7,7 @@ import pytest
 from agent.llm import AgentError, LLMAgent
 from agent.models import Document
 from agent.scripted import ScriptedAgent
+from agent.tools import TOOL_SCHEMAS
 from guard.models import UserRequest
 from guard.models import Decision
 from guard.policy import evaluate_action, load_policy
@@ -230,6 +231,54 @@ def test_gemini_errors_explain_setup_without_repeating_response_secrets(
     assert expected_hint in str(error.value)
     assert "do-not-display-test-key" not in str(error.value)
     assert len(session.calls) == 1
+
+
+def test_model_supplied_idempotency_key_is_ignored() -> None:
+    llm, _ = agent(
+        chat_response(
+            {
+                "amount": 15,
+                "currency": "USD",
+                "beneficiary": "sandbox-buyer-001",
+                "capture_id": "CAPTURE-1",
+                "idempotency_key": "MODEL-CHOSEN-KEY",
+                "sources": ["user-message"],
+            }
+        )
+    )
+
+    proposal = llm.propose(
+        request(), [Document("user-message", SourceType.USER, "Consigne.")]
+    )
+
+    assert proposal.action.idempotency_key.startswith("req-agent-001")
+    assert proposal.action.idempotency_key != "MODEL-CHOSEN-KEY"
+
+
+def test_identical_proposals_share_one_derived_key() -> None:
+    arguments = {
+        "amount": 15,
+        "currency": "USD",
+        "beneficiary": "sandbox-buyer-001",
+        "capture_id": "CAPTURE-1",
+    }
+    first_llm, _ = agent(chat_response(arguments))
+    second_llm, _ = agent(chat_response({**arguments, "idempotency_key": "OTHER-KEY"}))
+
+    first_proposal = first_llm.propose(request(), [])
+    second_proposal = second_llm.propose(request(), [])
+
+    assert first_proposal.action.idempotency_key
+    assert (
+        first_proposal.action.idempotency_key
+        == second_proposal.action.idempotency_key
+    )
+
+
+def test_tool_schemas_do_not_expose_the_idempotency_key() -> None:
+    for schema in TOOL_SCHEMAS:
+        properties = schema["function"]["parameters"]["properties"]
+        assert "idempotency_key" not in properties
 
 
 def test_scripted_agent_replays_scenario() -> None:

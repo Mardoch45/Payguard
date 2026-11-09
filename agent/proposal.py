@@ -1,8 +1,9 @@
-import hashlib
 import json
+from dataclasses import replace
 from typing import Any, Mapping, Sequence
 
 from agent.models import Document
+from guard.idempotency import derive_idempotency_key
 from guard.models import ProposedAction, ProvenanceContext, UserRequest
 from guard.provenance import build_provenance_context
 
@@ -12,7 +13,11 @@ def build_action(
     arguments: Mapping[str, Any],
     request: UserRequest,
 ) -> ProposedAction:
-    """Traduit les arguments d'un appel d'outil en action structurée."""
+    """Traduit les arguments d'un appel d'outil en action structurée.
+
+    La clé d'idempotence est toujours dérivée côté application : le modèle
+    ne peut ni la choisir ni l'omettre pour contourner l'anti-rejeu.
+    """
 
     metadata = {
         key: str(arguments[key])
@@ -21,16 +26,17 @@ def build_action(
     }
 
     sources = arguments.get("sources") or []
-    return ProposedAction(
+    action = ProposedAction(
         tool=tool,
         amount=_as_amount(arguments.get("amount")),
         currency=_as_text(arguments.get("currency")),
         beneficiary=_as_text(arguments.get("beneficiary")),
         reason=_as_text(arguments.get("reason")) or "",
         source_ids=tuple(str(source) for source in sources),
-        idempotency_key=_as_text(arguments.get("idempotency_key"))
-        or derive_idempotency_key(request, tool, arguments),
         metadata=metadata,
+    )
+    return replace(
+        action, idempotency_key=derive_idempotency_key(request, action)
     )
 
 
@@ -49,29 +55,6 @@ def build_provenance(
     return build_provenance_context(
         tuple(document.as_source() for document in documents)
     )
-
-
-def derive_idempotency_key(
-    request: UserRequest,
-    tool: str,
-    arguments: Mapping[str, Any],
-) -> str:
-    """Clé déterministe : rejouer la même demande ne rappelle pas PayPal."""
-
-    material = json.dumps(
-        {
-            "request_id": request.request_id,
-            "tool": tool,
-            **{
-                key: arguments.get(key)
-                for key in ("amount", "currency", "beneficiary", "invoice_id", "capture_id")
-            },
-        },
-        sort_keys=True,
-        default=str,
-    )
-    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()[:12]
-    return f"{request.request_id}-{digest}"
 
 
 def _as_text(value: Any) -> str | None:

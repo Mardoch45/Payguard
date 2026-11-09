@@ -4,8 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from guard.execution import process_action
-from guard.idempotency import IdempotencyRegistry
+from guard.execution import process_action, record_human_refusal
+from guard.idempotency import (
+    IdempotencyConflictError,
+    IdempotencyRegistry,
+    derive_idempotency_key,
+)
 from guard.models import (
     Decision,
     ProposedAction,
@@ -146,37 +150,139 @@ def test_duplicate_action_reuses_result_without_second_call(tmp_path: Path) -> N
     assert len(adapter.calls) == 1
 
 
-def test_reused_key_for_different_action_is_blocked(tmp_path: Path) -> None:
+def test_registry_rejects_a_reused_key_for_a_different_action() -> None:
+    registry = IdempotencyRegistry()
+    registry.record(
+        refund_action(idempotency_key="refund-execution-001"), {"status": "ok"}
+    )
+
+    with pytest.raises(IdempotencyConflictError):
+        registry.find(
+            refund_action(idempotency_key="refund-execution-001", amount=10.00)
+        )
+
+
+def test_proxy_derives_the_key_and_neutralizes_the_proposed_one(tmp_path: Path) -> None:
     adapter = FakePayPalAdapter()
     registry = IdempotencyRegistry()
+    audit_path = tmp_path / "audit.jsonl"
 
-    process_action(
+    first = process_action(
         request("refund_payment"),
-        refund_action(),
+        refund_action(idempotency_key="KEY-A"),
         POLICY,
         ProvenanceContext(),
         adapter,
         registry,
-        tmp_path / "audit.jsonl",
+        audit_path,
         human_confirmed=True,
     )
-    conflict = process_action(
-        replace(request("refund_payment"), constraints=replace(
-            request("refund_payment").constraints, amount=10.00
-        )),
-        refund_action(amount=10.00),
+    second = process_action(
+        request("refund_payment"),
+        refund_action(idempotency_key="KEY-B"),
         POLICY,
         ProvenanceContext(),
         adapter,
         registry,
-        tmp_path / "audit.jsonl",
+        audit_path,
         human_confirmed=True,
     )
 
-    assert conflict.executed is False
-    assert conflict.policy_decision.decision is Decision.BLOCK
-    assert conflict.policy_decision.rule_id == "idempotency.key_conflict"
+    expected_key = derive_idempotency_key(
+        request("refund_payment"), refund_action(idempotency_key="KEY-A")
+    )
+    assert adapter.calls[0].idempotency_key == expected_key
+    assert adapter.calls[0].idempotency_key != "KEY-A"
+    assert first.executed is True
+    assert second.executed is False
+    assert second.duplicate is True
+    assert second.result == first.result
     assert len(adapter.calls) == 1
+
+
+class FailingAdapter:
+    def __init__(self) -> None:
+        self.calls: list[ProposedAction] = []
+
+    def execute(self, action: ProposedAction) -> dict[str, str]:
+        self.calls.append(action)
+        raise RuntimeError("PayPal a répondu 500 : boom")
+
+
+def test_execution_error_is_audited_without_leaking_the_message(tmp_path: Path) -> None:
+    adapter = FailingAdapter()
+    audit_path = tmp_path / "audit.jsonl"
+
+    with pytest.raises(RuntimeError):
+        process_action(
+            request("refund_payment"),
+            refund_action(),
+            POLICY,
+            ProvenanceContext(),
+            adapter,
+            IdempotencyRegistry(),
+            audit_path,
+            human_confirmed=True,
+        )
+
+    event = json.loads(audit_path.read_text().strip())
+    assert event["result"] == "execution_error"
+    assert event["error"] == "RuntimeError"
+    assert event["paypal_called"] is True
+    assert event["decision"] == "CONFIRM"
+    assert "boom" not in audit_path.read_text()
+
+
+def test_execution_error_is_not_recorded_as_a_completed_operation(tmp_path: Path) -> None:
+    adapter = FailingAdapter()
+    registry = IdempotencyRegistry()
+
+    with pytest.raises(RuntimeError):
+        process_action(
+            request("refund_payment"),
+            refund_action(),
+            POLICY,
+            ProvenanceContext(),
+            adapter,
+            registry,
+            tmp_path / "audit.jsonl",
+            human_confirmed=True,
+        )
+
+    assert registry.find(refund_action()) is None
+
+
+def test_human_refusal_is_audited(tmp_path: Path) -> None:
+    adapter = FakePayPalAdapter()
+    registry = IdempotencyRegistry()
+    audit_path = tmp_path / "audit.jsonl"
+    proposal_request = request("refund_payment")
+    action = refund_action()
+
+    outcome = process_action(
+        proposal_request,
+        action,
+        POLICY,
+        ProvenanceContext(),
+        adapter,
+        registry,
+        audit_path,
+    )
+    record_human_refusal(
+        proposal_request,
+        action,
+        outcome.policy_decision,
+        ProvenanceContext(),
+        audit_path,
+    )
+
+    events = [json.loads(line) for line in audit_path.read_text().strip().splitlines()]
+    refusal = events[-1]
+    assert refusal["result"] == "refused_by_human"
+    assert refusal["paypal_called"] is False
+    assert refusal["decision"] == "CONFIRM"
+    assert refusal["rule_id"] == "action.confirmation_required"
+    assert adapter.calls == []
 
 
 @pytest.mark.parametrize("tool", ["list_invoices", "read_invoice"])

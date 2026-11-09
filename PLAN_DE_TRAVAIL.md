@@ -1,6 +1,9 @@
 # Plan de livraison — PayGuard
 
-Mis à jour le 5 novembre 2026 après publication du socle sur [GitHub](https://github.com/Mardoch45/Payguard) et ajout du chargement d'une note PayPal dans l'interface. L'[audit initial](AUDIT_HACKATHON.md) date du 3 novembre.
+
+Mis à jour le 10 novembre 2026 après les correctifs de durcissement. Les mises à jour précédentes : 4 novembre (lecture d'une facture Sandbox validée par le participant), [audit initial](AUDIT_HACKATHON.md) du 3 novembre.
+
+**Suivi du 10 novembre.** Quatre commits de durcissement ajoutés, **133 tests verts** et évaluation locale inchangée (8/8 attaques bloquées, 5/5 cas légitimes conformes) : licence MIT à la racine ; erreurs d'exécution et refus humains journalisés (`execution_error` type seul, `refused_by_human`) ; hôte sandbox exact `api-m.sandbox.paypal.com` en HTTPS avec redirections refusées ; clé d'idempotence dérivée par le proxy à partir de la demande autorisée, la proposition du modèle ne pouvant plus contourner l'anti-rejeu (la clé sert aussi de `PayPal-Request-Id`). Restent : publication du parcours note de facture, campagne d'évaluation modèle, vidéo et soumission.
 
 **Objectif :** soumettre le 11 novembre un prototype reproductible utilisant réellement un modèle IA et PayPal Sandbox. D'après les exigences fournies, clôture le 12 novembre 2026 à 21 h GMT+1, soit 21 h au Bénin. Vérifier l'échéance sur Devpost avant soumission.
 
@@ -72,15 +75,15 @@ Les accès du participant conditionnent les premières étapes. Les dates sont d
 - [ ] Résoudre automatiquement le payeur de la capture et sa correspondance avec l'alias local.
 - [x] Contraindre montant, devise, facture choisie et capture par la demande utilisateur.
 - [x] Établir l'exposition aux documents externes indépendamment des citations du LLM.
-- [ ] Vérifier HTTPS et l'hôte PayPal Sandbox exact ; empêcher les redirections vers un autre hôte.
+- [x] Vérifier HTTPS et l'hôte PayPal Sandbox exact ; empêcher les redirections vers un autre hôte.
 - [x] Rejeter les montants non finis/invalides et les fractions de centime pour USD/EUR.
 - [x] Implémenter le chargement contrôlé d'une facture et de sa note avant l'appel au modèle.
 - [ ] Valider ce chargement avec une note réelle depuis PayPal et Gemini.
 - [x] Isoler les erreurs des parcours avec et sans protection.
-- [ ] Journaliser refus humains et erreurs en distinguant tentative et succès.
+- [x] Journaliser refus humains et erreurs en distinguant tentative et succès.
 - [x] Afficher les paramètres effectifs lors de la confirmation.
 - [ ] Utiliser des objets distincts pour comparer deux opérations financières réelles.
-- [ ] Vérifier double clic/rejeu et documenter le registre d'idempotence en mémoire.
+- [x] Vérifier double clic/rejeu et documenter le registre d'idempotence en mémoire.
 - [x] Identifier scénarios scriptés, propositions du LLM, simulateur et Sandbox.
 
 Un remboursement PayPal retourne au payeur de la capture. Une « redirection du bénéficiaire » doit donc être testée via un objet non autorisé ou une opération dont la cible est réellement modifiable. Le scénario local send_money ne prouve pas une opération exécutable par cet adaptateur.
