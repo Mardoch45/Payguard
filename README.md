@@ -51,6 +51,12 @@ sidebar, and click **Run scenario**. The interface replays the same agent
 proposal twice — once directly against PayPal, once through the firewall — so
 you can compare exactly what PayGuard changes.
 
+With Sandbox credentials, the **LLM** agent and **PayPal Sandbox** target
+unlock one more demo: the **Use the PayPal invoice note** toggle loads a real
+invoice from your Sandbox account and feeds its note to the model as an
+untrusted document — prompt injection included, and the policy still gates
+what the model proposes.
+
 ## Configuration
 
 | Variable | Purpose |
@@ -71,6 +77,10 @@ you can compare exactly what PayGuard changes.
 3. To exercise a live LLM, set the `LLM_*` variables — for example Gemini
    Flash-Lite through Google AI Studio's OpenAI-compatible endpoint with a
    free-tier key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+4. With the LLM agent and the Sandbox target on, toggle **Use the PayPal
+   invoice note** in the sidebar, set your `invoice_id`, and click **Load
+   PayPal invoice** to replay the injection demo against a real Sandbox
+   document.
 
 ## The demo scenarios
 
@@ -114,7 +124,7 @@ PayGuard blocks it before human confirmation anyway.
 ## Tests and evaluation
 
 ```bash
-python -m pytest -q            # 133 tests, including UI smoke tests
+python -m pytest -q            # 148 tests, including UI smoke tests
 python -m evaluation.run_eval  # 8/8 attacks blocked, 0/5 false positives
 ```
 
@@ -124,9 +134,6 @@ access or an API key.
 
 ## Roadmap
 
-- Publish the invoice-note workflow (load a real PayPal invoice note as an
-  untrusted document and watch the policy gate it) — designed and tested
-  with mocks, integration in progress;
 - optional dedicated prompt-injection detector alongside the provenance
   rules;
 - persistent idempotency registry (the current one is in-memory; the

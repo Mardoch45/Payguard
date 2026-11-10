@@ -8,7 +8,7 @@ Run from the `payguard/` directory:
 import html
 import json
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +24,7 @@ from agent.llm import AgentError, LLMAgent  # noqa: E402
 from agent.models import AgentProposal, Document  # noqa: E402
 from agent.scripted import ScriptedAgent  # noqa: E402
 from app.demo import run_with_protection, run_without_protection  # noqa: E402
+from app.invoice_documents import load_invoice_document  # noqa: E402
 from app.scenarios import Scenario, load_all_scenarios, prepare_sandbox_scenario  # noqa: E402
 from guard.execution import record_human_refusal  # noqa: E402
 from guard.idempotency import IdempotencyRegistry  # noqa: E402
@@ -322,6 +323,7 @@ def build_proposal(
     scenario: Scenario,
     mode: str,
     settings: Any,
+    invoice_document: Document | None = None,
 ) -> AgentProposal:
     if mode == "scripted":
         return ScriptedAgent.from_scenario(
@@ -355,7 +357,10 @@ def build_proposal(
         request_id=scenario.id,
         constraints=scenario.constraints,
     )
-    return agent.propose(request, scenario_documents(scenario))
+    documents = scenario_documents(scenario)
+    if invoice_document is not None:
+        documents = [documents[0], invoice_document]
+    return agent.propose(request, documents)
 
 
 def show_action(action: Any) -> None:
@@ -548,7 +553,9 @@ def show_audit(audit_path: Path) -> None:
 
 def render_sidebar(
     scenario_by_id: dict[str, Scenario], settings: Any
-) -> tuple[str, str, bool, dict[str, str], Scenario, str]:
+) -> tuple[str, str, bool, dict[str, str], Scenario, str, bool, Document | None]:
+    use_paypal_note = False
+    invoice_document: Document | None = None
     with st.sidebar:
         if not settings.llm_configured:
             st.caption(
@@ -587,7 +594,7 @@ def render_sidebar(
                 "(capture, invoice, e-mail)."
             )
             capture_id = st.text_input("capture_id", key="capture_id")
-            invoice_id = st.text_input("invoice_id", key="invoice_id")
+            invoice_id = st.text_input("invoice_id", key="invoice_id").strip()
             recipient_email = st.text_input("recipient_email", key="recipient_email")
             sandbox_ids = {
                 "capture_id": capture_id,
@@ -618,7 +625,64 @@ def render_sidebar(
             scenario = prepare_sandbox_scenario(scenario, sandbox_ids)
 
         pg_section("User request")
-        st.markdown(f'<div class="pg-quote">{html.escape(scenario.user_request)}</div>', unsafe_allow_html=True)
+        if mode == "llm" and adapter_label == "PayPal Sandbox":
+            use_paypal_note = st.toggle(
+                "Use the PayPal invoice note",
+                key="use_paypal_note",
+                help="Replaces the scenario text with the document loaded from PayPal.",
+            )
+            loaded = st.session_state.get("loaded_invoice_document")
+            if loaded and loaded["invoice_id"] != sandbox_ids["invoice_id"]:
+                st.session_state.pop("loaded_invoice_document", None)
+            if use_paypal_note:
+                st.caption(
+                    "Load the invoice, then review the document that will be "
+                    "sent to the model."
+                )
+                if st.button(
+                    "Load PayPal invoice",
+                    disabled=not sandbox_ids["invoice_id"],
+                    key="load_paypal_invoice",
+                ):
+                    st.session_state.pop("loaded_invoice_document", None)
+                    st.session_state.pop("run", None)
+                    try:
+                        with st.spinner("Reading the Sandbox invoice…"):
+                            document = load_invoice_document(
+                                sandbox_ids["invoice_id"],
+                                get_policy(),
+                                get_adapter("paypal"),
+                                get_registry("paypal"),
+                                settings.audit_path,
+                            )
+                        st.session_state.loaded_invoice_document = {
+                            "invoice_id": sandbox_ids["invoice_id"],
+                            "document": document,
+                        }
+                    except Exception as error:
+                        st.error(f"Could not load the invoice: {error}")
+                loaded = st.session_state.get("loaded_invoice_document")
+                if loaded:
+                    invoice_document = loaded["document"]
+                    scenario = replace(scenario, external_text=invoice_document.text)
+                    st.success("Invoice loaded from PayPal Sandbox.")
+                    st.caption("Document sent to the model during execution:")
+                    st.code(invoice_document.text, language="json")
+                    if not json.loads(invoice_document.text)["note"]:
+                        st.info("This invoice carries no note.")
+                else:
+                    st.info(
+                        "Set invoice_id and load the invoice before running "
+                        "the scenario."
+                    )
+            else:
+                st.session_state.pop("loaded_invoice_document", None)
+        else:
+            st.session_state.pop("loaded_invoice_document", None)
+        st.markdown(
+            f'<div class="pg-quote">{html.escape(scenario.user_request)}</div>',
+            unsafe_allow_html=True,
+        )
         if scenario.constraints:
             constraints = scenario.constraints
             facts = []
@@ -639,7 +703,7 @@ def render_sidebar(
                     f'<div class="pg-facts">{"".join(f + "<br/>" for f in facts)}</div>',
                     unsafe_allow_html=True,
                 )
-        if scenario.external_text:
+        if scenario.external_text and not use_paypal_note:
             pg_section("Untrusted external text")
             st.markdown(
                 f'<div class="pg-untrusted">{html.escape(scenario.external_text)}</div>',
@@ -655,7 +719,7 @@ def render_sidebar(
                 "The decision applies to the action the LLM actually proposes. "
                 "The model may propose something different from the scripted case."
             )
-    return mode_label, adapter_label, dry_run, sandbox_ids, scenario, mode
+    return mode_label, adapter_label, dry_run, sandbox_ids, scenario, mode, use_paypal_note, invoice_document
 
 
 def main() -> None:
@@ -666,7 +730,7 @@ def main() -> None:
 
     inject_css()
     render_hero()
-    _, adapter_label, dry_run, sandbox_ids, scenario, mode = render_sidebar(
+    _, adapter_label, dry_run, sandbox_ids, scenario, mode, use_paypal_note, invoice_document = render_sidebar(
         scenario_by_id, settings
     )
 
@@ -678,6 +742,8 @@ def main() -> None:
         "dry_run": dry_run,
         "sandbox_ids": sandbox_ids,
         "model": settings.llm_model if mode == "llm" else None,
+        "use_paypal_note": use_paypal_note,
+        "invoice_document": invoice_document.text if invoice_document else None,
     }
     previous_run = st.session_state.get("run")
     if previous_run and previous_run.get("context") != context:
@@ -687,13 +753,18 @@ def main() -> None:
     adapter = get_adapter(target)
     audit_path = settings.audit_path
 
-    if st.button("Run scenario", type="primary"):
+    if st.button(
+        "Run scenario",
+        type="primary",
+        disabled=use_paypal_note and invoice_document is None,
+    ):
         st.session_state.pop("run", None)
         try:
             proposal = build_proposal(
                 scenario,
                 mode,
                 settings,
+                invoice_document,
             )
             unprotected = None
             unprotected_error = None
@@ -724,6 +795,7 @@ def main() -> None:
                 "audit_path": audit_path,
                 "human_confirmed": False,
                 "refused": False,
+                "invoice_document": invoice_document,
             }
         except AgentError as error:
             st.error(f"The agent did not produce a usable action: {error}")
@@ -739,6 +811,11 @@ def main() -> None:
             f"external documents provided: "
             f"{'yes' if scenario.external_text else 'no'}"
         )
+        if run.get("invoice_document"):
+            st.caption(
+                "Source externe : facture lue dans PayPal Sandbox. "
+                "La lecture de préparation figure aussi dans le journal d'audit."
+            )
         if (
             proposal.mode == "llm"
             and scenario.kind == "attack"
