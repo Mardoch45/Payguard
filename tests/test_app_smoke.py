@@ -23,13 +23,13 @@ def test_app_boots_and_runs_a_scenario() -> None:
     assert not app.exception
     assert app.radio[0].disabled
     assert app.radio[1].disabled
-    run_buttons = [button for button in app.button if "Exécuter" in button.label]
+    run_buttons = [button for button in app.button if "Run scenario" in button.label]
     assert run_buttons
 
     run_buttons[0].click().run()
 
     assert not app.exception
-    assert any("Sans protection" in header.value for header in app.subheader)
+    assert any("Without PayGuard" in header.value for header in app.subheader)
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def configured_app(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 
 
 def execute_scenario(app):
-    return next(button for button in app.button if button.label == "Exécuter le scénario").click().run()
+    return next(button for button in app.button if button.label == "Run scenario").click().run()
 
 
 def test_llm_decision_uses_real_proposal_and_external_exposure(configured_app) -> None:
@@ -78,9 +78,9 @@ def test_llm_decision_uses_real_proposal_and_external_exposure(configured_app) -
     assert run["outcome"].policy_decision.decision is Decision.CONFIRM
     assert run["adapter"].calls == []
     assert sandbox.calls == []
-    assert any("documents externes fournis : oui" in caption.value for caption in app.caption)
-    assert any("sans opération financière" in message.value for message in app.info)
-    next(button for button in app.button if button.label == "Autoriser").click().run()
+    assert any("external documents provided: yes" in caption.value for caption in app.caption)
+    assert any("no financial operation" in message.value for message in app.info)
+    next(button for button in app.button if button.label == "Approve").click().run()
     assert not app.exception
     assert app.session_state["run"]["outcome"].executed
 
@@ -90,10 +90,10 @@ def test_switching_agent_mode_hides_old_result(configured_app) -> None:
     app.radio[0].set_value("LLM").run()
     execute_scenario(app)
 
-    app.radio[0].set_value("Scripté (hors-ligne)").run()
+    app.radio[0].set_value("Scripted (offline)").run()
 
     assert not app.exception
-    assert not any(header.value == "Avec PayGuard" for header in app.subheader)
+    assert not any(header.value == "With PayGuard" for header in app.subheader)
     assert app.selectbox[0].value == "attack-direct-001"
     execute_scenario(app)
     assert app.session_state["run"]["proposal"].action.tool == "refund_payment"
@@ -109,7 +109,7 @@ def test_simulator_result_is_not_reused_in_sandbox(configured_app) -> None:
     assert fake_result["simulated"] is True
 
     app.radio[1].set_value("PayPal Sandbox").run()
-    assert not any(header.value == "Avec PayGuard" for header in app.subheader)
+    assert not any(header.value == "With PayGuard" for header in app.subheader)
     execute_scenario(app)
 
     assert not app.exception
@@ -117,7 +117,7 @@ def test_simulator_result_is_not_reused_in_sandbox(configured_app) -> None:
     assert app.session_state["run"]["outcome"].executed
     assert app.session_state["run"]["outcome"].result["backend"] == "sandbox-test"
 
-    app.radio[1].set_value("Simulateur local").run()
+    app.radio[1].set_value("Local simulator").run()
     execute_scenario(app)
     assert app.session_state["run"]["outcome"].executed
     assert not app.session_state["run"]["outcome"].duplicate
@@ -130,22 +130,22 @@ def test_payment_results_remain_separate_between_simulator_and_sandbox(configure
     app, sandbox = configured_app
     app.selectbox[0].select("normal-refund-001").run()
     execute_scenario(app)
-    next(button for button in app.button if button.label == "Autoriser").click().run()
+    next(button for button in app.button if button.label == "Approve").click().run()
     fake_result = app.session_state["run"]["outcome"].result
     assert fake_result["simulated"] is True
 
     app.radio[1].set_value("PayPal Sandbox").run()
     app.text_input(key="capture_id").set_value("CAPTURE-TEST-001").run()
     execute_scenario(app)
-    next(button for button in app.button if button.label == "Autoriser").click().run()
+    next(button for button in app.button if button.label == "Approve").click().run()
 
     assert not app.exception
     assert len(sandbox.calls) == 1
     assert app.session_state["run"]["outcome"].result["backend"] == "sandbox-test"
 
-    app.radio[1].set_value("Simulateur local").run()
+    app.radio[1].set_value("Local simulator").run()
     execute_scenario(app)
-    next(button for button in app.button if button.label == "Autoriser").click().run()
+    next(button for button in app.button if button.label == "Approve").click().run()
     assert app.session_state["run"]["outcome"].duplicate
     assert app.session_state["run"]["outcome"].result == fake_result
     assert len(sandbox.calls) == 1
@@ -166,7 +166,7 @@ def test_failed_llm_run_does_not_display_previous_success(
     execute_scenario(app)
 
     assert not app.exception
-    assert not any(header.value == "Avec PayGuard" for header in app.subheader)
+    assert not any(header.value == "With PayGuard" for header in app.subheader)
     assert any("model unavailable in test" in error.value for error in app.error)
 
 
@@ -200,7 +200,7 @@ def test_under_limit_amount_attack_is_visible_and_blocked(configured_app) -> Non
     assert run["outcome"].policy_decision.rule_id == "intent.amount_mismatch"
     assert run["adapter"].calls == []
     assert sandbox.calls == []
-    assert all(button.label != "Autoriser" for button in app.button)
+    assert all(button.label != "Approve" for button in app.button)
     assert any("5.00 USD" in line.value for line in app.markdown)
 
 
@@ -232,4 +232,4 @@ def test_model_capture_is_never_replaced_with_the_authorized_selection(
     assert run["outcome"].policy_decision.decision is Decision.BLOCK
     assert run["outcome"].policy_decision.rule_id == "intent.capture_id_mismatch"
     assert sandbox.calls == []
-    assert all(button.label != "Autoriser" for button in app.button)
+    assert all(button.label != "Approve" for button in app.button)

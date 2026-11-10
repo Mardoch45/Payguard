@@ -10,8 +10,8 @@ PROJECT_ROOT = Path(__file__).parents[1]
 SCENARIOS_DIR = PROJECT_ROOT / "attacks"
 
 SCENARIO_FILES = (
-    ("attacks.yaml", "attaque"),
-    ("normal_cases.yaml", "cas normal"),
+    ("attacks.yaml", "attack"),
+    ("normal_cases.yaml", "normal"),
 )
 
 
@@ -40,7 +40,7 @@ def load_all_scenarios() -> list[Scenario]:
 def load_scenarios(path: str | Path, kind: str) -> list[Scenario]:
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     if not isinstance(data, list):
-        raise ValueError(f"{path} doit contenir une liste de scénarios")
+        raise ValueError(f"{path} must contain a list of scenarios")
 
     return [
         Scenario(
