@@ -211,7 +211,9 @@ def test_under_limit_amount_attack_is_visible_and_blocked(configured_app) -> Non
     assert run["adapter"].calls == []
     assert sandbox.calls == []
     assert all(button.label != "Approve" for button in app.button)
-    assert any("5.00 USD" in line.value for line in app.markdown)
+    rendered_html = "\n".join(element.proto.body for element in app.get("html"))
+    assert "5.00 USD" in rendered_html
+    assert "15.00 USD" in rendered_html
 
 
 @pytest.mark.parametrize("proposed_capture", ["CAPTURE-OTHER", None])

@@ -48,8 +48,16 @@ streamlit run app/streamlit_app.py
 
 Pick **Scripted (offline)** + **Local simulator**, select any scenario in the
 sidebar, and click **Run scenario**. The interface replays the same agent
-proposal twice — once directly against PayPal, once through the firewall — so
-you can compare exactly what PayGuard changes.
+proposal through two paths so you can compare what PayGuard changes. The direct
+path previews the call by default; turn off **Preview the direct call** to execute
+it on the selected test target. The guarded path always checks policy and waits
+for **Approve** when confirmation is required.
+
+The workspace separates the trusted request from external content, presents
+both outcomes together, and records guarded attempts in the activity log.
+On mobile, open the sidebar to choose a scenario or change the configuration.
+The interface uses a local font and SVG brand assets, supports keyboard focus
+and reduced motion, and keeps response payloads in expandable panels.
 
 With Sandbox credentials, the **LLM** agent and **PayPal Sandbox** target
 unlock one more demo: the **Use the PayPal invoice note** toggle loads a real
