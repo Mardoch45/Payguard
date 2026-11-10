@@ -12,8 +12,8 @@ deployable. PayGuard is the missing layer between the two.
 
 - **Stack:** Python 3.11+, Streamlit, PayPal Sandbox (REST, OAuth 2.0),
   any OpenAI-compatible LLM (Gemini via Google AI Studio by default)
-- **Quality gates:** 133 automated tests, an 13-scenario security evaluation
-  (8/8 attacks blocked, 0 false positives), MIT licensed
+- **Quality gates:** 148 automated tests, a 13-scenario security evaluation
+  (8/8 attacks blocked, 5/5 legitimate requests approved), MIT licensed
 - **Runs offline:** the scripted agent and the local PayPal simulator need
   **no credentials and no network** — judges can reproduce everything locally
 
