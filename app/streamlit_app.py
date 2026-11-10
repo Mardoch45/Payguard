@@ -71,7 +71,7 @@ PAGE_CSS = """
 }
 [data-testid="stHeader"] { background: transparent; }
 [data-testid="stToolbar"], footer, #MainMenu { display: none; }
-.block-container { padding-top: 1.4rem; max-width: 1500px; }
+.block-container { padding: 1.4rem 1.6rem 3rem; max-width: 1500px; }
 
 /* ---------- hero ---------- */
 .pg-hero {
@@ -197,7 +197,7 @@ PAGE_CSS = """
     background: #060A13; border: 1px solid rgba(148, 163, 184, 0.17);
     border-radius: 12px; padding: 0.95rem 1.1rem 1.05rem;
     font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-    font-size: 0.8rem; overflow-x: auto;
+    font-size: 0.78rem; overflow-x: auto;
 }
 .pg-term-head {
     display: flex; align-items: center; gap: 0.6rem;
@@ -212,9 +212,9 @@ PAGE_CSS = """
 @keyframes pg-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .pg-term-row {
     display: grid;
-    grid-template-columns: 4.8rem 11.5rem 9rem 6rem 13.5rem 13.5rem 7rem;
-    gap: 0.7rem; padding: 0.34rem 0; color: #C7D2E8;
-    border-bottom: 1px dashed rgba(148, 163, 184, 0.09); min-width: 66rem;
+    grid-template-columns: 4rem minmax(6.5rem, 1fr) 7rem 5rem minmax(9rem, 1.55fr) minmax(9rem, 1.55fr) 5.8rem;
+    gap: 0.55rem; padding: 0.34rem 0; color: #C7D2E8;
+    border-bottom: 1px dashed rgba(148, 163, 184, 0.09);
 }
 .pg-term-row span {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -490,11 +490,19 @@ def show_protected(outcome: Any, run: dict[str, Any]) -> None:
         st.error("Action blocked — PayPal was never called.")
 
 
+def _display_path(audit_path: Path) -> str:
+    """Show the audit trail as a repo-relative path in the UI."""
+    try:
+        return audit_path.relative_to(Path.cwd()).as_posix()
+    except ValueError:
+        return audit_path.as_posix()
+
+
 def show_audit(audit_path: Path) -> None:
     st.subheader("Audit log")
     header = (
         '<div class="pg-term-head"><span class="pg-dot"></span> live '
-        f'<span class="pg-term-path">· {html.escape(str(audit_path))}</span></div>'
+        f'<span class="pg-term-path">· {html.escape(_display_path(audit_path))}</span></div>'
     )
     if not audit_path.exists():
         st.markdown(
