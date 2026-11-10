@@ -1,18 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="54" viewBox="0 0 48 54" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="108" viewBox="0 0 96 108" fill="none">
   <defs>
-    <linearGradient id="pg-shell" x1="11" y1="3" x2="39" y2="51" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#5FA5FF"/>
-      <stop offset=".5" stop-color="#3E7BFA"/>
-      <stop offset="1" stop-color="#7C5CFF"/>
+    <radialGradient id="pg-halo" cx="50%" cy="46%" r="52%">
+      <stop offset="0" stop-color="#2E6BE6" stop-opacity=".38"/>
+      <stop offset=".62" stop-color="#2E6BE6" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#2E6BE6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pg-shell" x1="22" y1="6" x2="70" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#26477F"/>
+      <stop offset=".55" stop-color="#16305F"/>
+      <stop offset="1" stop-color="#0E1F44"/>
     </linearGradient>
-    <linearGradient id="pg-sheen" x1="24" y1="2" x2="24" y2="34" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".3"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    <linearGradient id="pg-swing" x1="84" y1="16" x2="40" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B7BF0"/>
+      <stop offset=".55" stop-color="#2456C8"/>
+      <stop offset="1" stop-color="#173B85"/>
+    </linearGradient>
+    <linearGradient id="pg-tail" x1="40" y1="58" x2="20" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4D8DFF"/>
+      <stop offset="1" stop-color="#2E6BE6" stop-opacity=".25"/>
     </linearGradient>
   </defs>
-  <path d="M24 2.4C28.9 4.9 36.6 7.9 42.9 9.5 43.4 16.9 43.3 23.9 41.3 30 38.4 39 31 46.6 24 50.7 17 46.6 9.6 39 6.7 30 4.7 23.9 4.6 16.9 5.1 9.5 11.4 7.9 19.1 4.9 24 2.4Z" fill="url(#pg-shell)"/>
-  <path d="M24 7.1C28.2 9.3 34.9 11.9 39.6 13.3 40 19.6 39.9 25.4 38.2 30.2 35.6 37.7 29.8 43.9 24 47.5 18.2 43.9 12.4 37.7 9.8 30.2 8.1 25.4 8 19.6 8.4 13.3 13.1 11.9 19.8 9.3 24 7.1Z" fill="#0A1130" fill-opacity=".36" stroke="#FFFFFF" stroke-opacity=".18"/>
-  <path d="M24 2.4C28.9 4.9 36.6 7.9 42.9 9.5 43.4 16.9 43.3 23.9 41.3 30 38.4 39 31 46.6 24 50.7 17 46.6 9.6 39 6.7 30 4.7 23.9 4.6 16.9 5.1 9.5 11.4 7.9 19.1 4.9 24 2.4Z" fill="url(#pg-sheen)"/>
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M16.6 38.4V16.4H27.2C32.1 16.4 36 20.3 36 25.2 36 30.1 32.1 34 27.2 34H22V38.4H16.6ZM22 21.4V28.9H27C28.5 28.9 29.7 27.7 29.7 26.2V24.1C29.7 22.6 28.5 21.4 27 21.4H22Z" fill="#FFFFFF"/>
-  <path d="M26.8 34.8 30 38 36.6 30.4" stroke="#7DEFCB" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <ellipse cx="48" cy="54" rx="47" ry="52" fill="url(#pg-halo)"/>
+
+  <!-- base shield (dark navy) -->
+  <path d="M48 2.5 C58 8.5 72 13.5 87 15.5 C89.5 40 87 66 76 84
+           C68.5 96 58 103 48 106.5 C38 103 27.5 96 20 84
+           C9 66 6.5 40 9 15.5 C24 13.5 38 8.5 48 2.5 Z" fill="url(#pg-shell)"/>
+
+  <!-- bright swing panel, lower-right, separated by the S channel -->
+  <path d="M73 11.8 C77.5 13 82.2 14.5 87 15.5 C89.5 40 87 66 76 84
+           C68.5 96 58 103 48 106.5 C44.6 105.3 41.4 103.6 38.2 101.4
+           C54 87.5 65 66.5 66.5 45.5 C67.5 32.5 69.8 21 73 11.8 Z"
+        fill="url(#pg-swing)" stroke="#0A0F2C" stroke-width="4.5" stroke-linejoin="round"/>
+
+  <!-- bright rim on the outer right edge -->
+  <path d="M87 15.5 C89.5 40 87 66 76 84 C68.5 96 58 103 48 106.5"
+        stroke="#5FA5FF" stroke-opacity=".8" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- network graph, upper-left -->
+  <g stroke="#3B82F6" stroke-width="3" stroke-linecap="round">
+    <path d="M36 30 L22 44"/>
+    <path d="M36 30 L52 42"/>
+    <path d="M36 30 L38 60"/>
+    <path d="M22 44 L38 60"/>
+    <path d="M52 42 L38 60"/>
+  </g>
+  <!-- tail flowing along the channel -->
+  <path d="M38 60 C35 74 30 85 21 93" stroke="url(#pg-tail)" stroke-width="3.2"
+        stroke-linecap="round" fill="none"/>
+  <g>
+    <circle cx="36" cy="30" r="10.5" fill="#4D8DFF" opacity=".22"/>
+    <circle cx="36" cy="30" r="8" fill="#4D8DFF"/>
+    <circle cx="22" cy="44" r="9" fill="#3B82F6" opacity=".22"/>
+    <circle cx="22" cy="44" r="6.5" fill="#3B82F6"/>
+    <circle cx="52" cy="42" r="9.5" fill="#34D399" opacity=".25"/>
+    <circle cx="52" cy="42" r="7" fill="#34D399"/>
+    <circle cx="38" cy="60" r="9.5" fill="#4D8DFF" opacity=".22"/>
+    <circle cx="38" cy="60" r="7.5" fill="#4D8DFF"/>
+  </g>
+
+  <!-- teal check inside the bright panel -->
+  <path d="M55 68 L66 80 L85 50" stroke="#35E0B2" stroke-width="8"
+        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

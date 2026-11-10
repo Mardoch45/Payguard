@@ -1,5 +1,9 @@
 # PayGuard 🛡️
 
+<p align="center">
+  <img src="app/assets/payguard-logo.svg" alt="PayGuard logo — a glowing navy shield carrying a payment-network graph and a teal verification check, above the wordmark PayGuard" width="400">
+</p>
+
 **A transaction firewall for AI agents.** PayGuard sits between an LLM agent
 and PayPal: every proposed payment is evaluated against a deny-by-default
 policy, sensitive operations wait for an explicit human click, replays are

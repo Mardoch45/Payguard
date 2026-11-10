@@ -111,7 +111,7 @@ def inject_styles() -> None:
 def render_brand() -> None:
     st.html(
         f'<a class="pg-brand" href="#overview" aria-label="PayGuard overview">'
-        f'{logo()}<span><strong translate="no">PayGuard</strong>'
+        f'{logo()}<span><strong translate="no"><span class="pg-pay">Pay</span>Guard</strong>'
         '<small>AI payment security</small></span></a>'
         '<div class="pg-workspace-label">Demo workspace</div>'
         '<nav class="pg-nav" aria-label="Workspace sections">'

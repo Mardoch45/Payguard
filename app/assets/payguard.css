@@ -76,7 +76,8 @@ button, a, input, summary { touch-action: manipulation; -webkit-tap-highlight-co
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #a7b5d6; font-size: .8rem; line-height: 1.5; }
 .pg-brand { display: flex; align-items: center; gap: .65rem; text-decoration: none !important; color: white !important; min-height: 54px; }
 .pg-brand > .pg-mark { width: 41px; height: 46px; filter: drop-shadow(0 6px 16px rgba(94, 139, 255, .45)); }
-.pg-brand strong { font-size: 1.65rem; font-weight: 750; letter-spacing: -.06em; display: block; line-height: 1.2; background: linear-gradient(120deg, #ffffff 40%, #c3d4ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pg-brand strong { font-size: 1.65rem; font-weight: 750; letter-spacing: -.06em; display: block; line-height: 1.2; color: #3f80ff; text-shadow: 0 0 18px rgba(63, 128, 255, .45); }
+.pg-brand strong .pg-pay { color: #5f79b3; text-shadow: none; }
 .pg-brand small { display: block; font-size: .75rem; color: #a7b5d6; margin-top: .3rem; }
 .pg-workspace-label { color: #8fa0c4; font-size: .68rem; font-weight: 650; text-transform: uppercase; letter-spacing: .16em; margin: 2rem 0 .6rem; }
 .pg-nav { display: flex; flex-direction: column; gap: .35rem; }

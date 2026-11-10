@@ -9,8 +9,11 @@ firewall, then understand the policy decision and its audit trail.
 A dark security console with light glassmorphism: a deep indigo canvas carrying
 soft blue and violet glows, translucent glass panels for every transaction
 surface, and a gradient protection path connecting the agent to PayPal. The
-brand mark is a gradient shield with a glass core, a white P monogram and a
-mint verification tick. Decisions use explicit words and icons as well as
+brand mark (v2, adopted concept) is a navy shield split by a dark S-sweep: a
+payment-network graph — four nodes, one teal — flows across the upper-left, a
+tail of the graph hugs the channel, and a teal verification check anchors the
+bright lower-right panel. The wordmark sets "Pay" dim against a glowing,
+bright-blue "Guard". Decisions use explicit words and icons as well as
 color. No invented activity or results.
 
 | Token | Value | Purpose |
@@ -19,15 +22,19 @@ color. No invented activity or results.
 | Glass | rgba(255,255,255,.05–.075) | Cards, panels, sidebar, blurred 10–18px |
 | Border | rgba(255,255,255,.09–.16) | Hairline edges on glass surfaces |
 | Blue | #5E8BFF | Primary actions, protection path, keyboard focus |
+| Brand Blue | #3F80FF | Wordmark "Guard", logo swing panel and glow |
 | Violet | #7C5CFF | Gradient end, agent accents |
 | Teal | #34D399 | Authorized and protected states |
 | Red | #FB7185 | Blocked and unsafe states |
 | Amber | #FBBF24 | Approval required, untrusted sources |
 | Text | #E8EEFC / #9AA8C8 | Primary text / muted text |
 
-The brand gradient (135°, #3E7BFA → #5E8BFF → #7C5CFF) is reserved for the
-logo, the primary button and the active navigation pill; status colors stay
-translucent and never compete with it.
+The UI brand gradient (135°, #3E7BFA → #5E8BFF → #7C5CFF) is reserved for the
+primary button and the active navigation pill; status colors stay translucent
+and never compete with it. The logo has its own palette: navy shell
+(#26477F → #0E1F44), bright swing panel (#3B7BF0 → #173B85), graph nodes
+#4D8DFF/#3B82F6 with one teal node #34D399, check #35E0B2, wordmark "Pay"
+#2B4C8C and "Guard" #3F80FF with a soft glow.
 
 Typography: locally bundled Ubuntu Sans, a humanist family with open forms and
 distinctive headings. One family keeps the workspace coherent. Use tabular
