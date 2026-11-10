@@ -13,10 +13,10 @@ def build_action(
     arguments: Mapping[str, Any],
     request: UserRequest,
 ) -> ProposedAction:
-    """Traduit les arguments d'un appel d'outil en action structurée.
+    """Translate a tool-call's arguments into a structured action.
 
-    La clé d'idempotence est toujours dérivée côté application : le modèle
-    ne peut ni la choisir ni l'omettre pour contourner l'anti-rejeu.
+    The idempotency key is always derived on the application side: the model
+    can neither choose it nor omit it to bypass anti-replay.
     """
 
     metadata = {
@@ -44,12 +44,12 @@ def build_provenance(
     cited_source_ids: Sequence[str],
     documents: Sequence[Document],
 ) -> ProvenanceContext:
-    """Établit l'exposition externe à partir des documents fournis au modèle.
+    """Compute external exposure from the documents provided to the model.
 
-    Les citations restent explicatives : le modèle ne peut pas masquer un
-    document externe reçu en citant seulement la consigne de l'utilisateur.
-    La présence d'une source externe indique une influence possible, pas
-    une preuve que le modèle a obéi à son contenu.
+    Citations remain explanatory: the model cannot hide an external document
+    it received by citing only the user's instruction. The presence of an
+    external source indicates possible influence, not proof that the model
+    obeyed its content.
     """
 
     return build_provenance_context(

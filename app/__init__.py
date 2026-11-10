@@ -1,1 +1,1 @@
-"""Démonstration PayGuard : scénarios, exécution comparée et interface."""
+"""PayGuard demonstration: scenarios, side-by-side execution, and interface."""

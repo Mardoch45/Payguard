@@ -1,8 +1,8 @@
-"""Adaptateur local : simule PayPal sans aucun appel réseau.
+"""Local adapter: simulates PayPal without any network call.
 
-Utilisé par la démonstration hors-ligne et par les tests. Il enregistre
-chaque action reçue, ce qui permet de prouver qu'une action bloquée par
-la politique n'atteint jamais l'adaptateur.
+Used by the offline demonstration and by the tests. It records every
+action it receives, which makes it possible to prove that an action
+blocked by the policy never reaches the adapter.
 """
 
 from typing import Any
@@ -11,7 +11,7 @@ from guard.models import ProposedAction
 
 
 class FakePayPalAdapter:
-    """Adaptateur déterministe, sans identifiants ni réseau."""
+    """Deterministic adapter with no credentials and no network."""
 
     def __init__(self) -> None:
         self.calls: list[ProposedAction] = []

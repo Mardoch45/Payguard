@@ -1,1 +1,1 @@
-"""Agent minimal qui propose des actions PayPal à PayGuard."""
+"""Minimal agent that proposes PayPal actions to PayGuard."""

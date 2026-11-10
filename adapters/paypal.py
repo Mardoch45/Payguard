@@ -1,16 +1,16 @@
-"""Adaptateur PayPal Sandbox.
+"""PayPal Sandbox adapter.
 
-L'adaptateur est la seule couche autorisée à parler à PayPal. Il
-n'accepte que les actions prévues par la politique locale, refuse tout
-outil inconnu, vérifie que l'URL cible est exactement l'hôte sandbox
-officiel en HTTPS et refuse de suivre les redirections.
+The adapter is the only layer allowed to talk to PayPal. It only accepts
+the actions planned by the local policy, refuses any unknown tool, checks
+that the target URL is exactly the official sandbox host over HTTPS, and
+refuses to follow redirects.
 
-Endpoints utilisés (API REST PayPal v2) :
-- ``GET  /v2/invoicing/invoices``                    lister les factures
-- ``GET  /v2/invoicing/invoices/{id}``               lire une facture
-- ``POST /v2/invoicing/invoices``                    créer un brouillon
-- ``POST /v2/invoicing/invoices/{id}/send``          envoyer la facture
-- ``POST /v2/payments/captures/{id}/refund``         rembourser un paiement
+Endpoints used (PayPal REST API v2):
+- ``GET  /v2/invoicing/invoices``                    list invoices
+- ``GET  /v2/invoicing/invoices/{id}``               read an invoice
+- ``POST /v2/invoicing/invoices``                    create a draft
+- ``POST /v2/invoicing/invoices/{id}/send``          send the invoice
+- ``POST /v2/payments/captures/{id}/refund``         refund a payment
 """
 
 import hashlib
@@ -30,7 +30,7 @@ CAPTURES_PATH = "/v2/payments/captures"
 
 
 class PayPalAPIError(RuntimeError):
-    """Réponse PayPal en erreur ou inutilisable."""
+    """Error or unusable PayPal response."""
 
     def __init__(
         self,
@@ -38,13 +38,13 @@ class PayPalAPIError(RuntimeError):
         message: str,
         payload: Mapping[str, Any] | None = None,
     ) -> None:
-        super().__init__(f"PayPal a répondu {status_code} : {message}")
+        super().__init__(f"PayPal responded {status_code}: {message}")
         self.status_code = status_code
         self.payload = dict(payload or {})
 
 
 class UnsupportedActionError(ValueError):
-    """Action que l'adaptateur ne sait pas ou ne veut pas exécuter."""
+    """Action the adapter cannot or will not execute."""
 
 
 @dataclass(frozen=True)
@@ -55,7 +55,7 @@ class PayPalResponse:
 
 
 class PayPalClient:
-    """Client REST minimal avec jeton OAuth mis en cache."""
+    """Minimal REST client with a cached OAuth token."""
 
     def __init__(
         self,
@@ -66,10 +66,10 @@ class PayPalClient:
         session: requests.Session | None = None,
         timeout: float = 20.0,
     ) -> None:
-        # Hôte exact et HTTPS : un sous-texte « sandbox » ne suffit pas.
+        # Exact host and HTTPS: a "sandbox" substring is not enough.
         validate_sandbox_base_url(base_url)
         if not client_id or not client_secret:
-            raise ValueError("Identifiants PayPal Sandbox manquants.")
+            raise ValueError("Missing PayPal Sandbox credentials.")
 
         self._client_id = client_id
         self._client_secret = client_secret
@@ -104,13 +104,13 @@ class PayPalClient:
             params=params,
             headers=headers,
             timeout=self._timeout,
-            # Une redirection vers un autre hôte divulguerait le jeton Bearer.
+            # A redirect to another host would leak the Bearer token.
             allow_redirects=False,
         )
         payload = _safe_json(response)
 
         if not 200 <= response.status_code < 300:
-            message = str(payload.get("message") or payload.get("error") or "erreur")
+            message = str(payload.get("message") or payload.get("error") or "error")
             raise PayPalAPIError(response.status_code, message, payload)
         return PayPalResponse(response.status_code, payload, response.headers)
 
@@ -121,8 +121,8 @@ class PayPalClient:
         response = self._session.post(
             f"{self._base_url}{TOKEN_PATH}",
             auth=(self._client_id, self._client_secret),
-            # Les droits activés récemment peuvent manquer dans un jeton
-            # conservé par PayPal. Le cache local reste utilisé ensuite.
+            # Permissions granted recently may be missing from a token
+            # cached by PayPal. The local cache keeps being used afterwards.
             data={"grant_type": "client_credentials", "ignoreCache": "true"},
             headers={"Accept": "application/json"},
             timeout=self._timeout,
@@ -132,7 +132,7 @@ class PayPalClient:
         if response.status_code != 200 or "access_token" not in payload:
             raise PayPalAPIError(
                 response.status_code,
-                str(payload.get("error_description") or "jeton OAuth refusé"),
+                str(payload.get("error_description") or "OAuth token refused"),
                 payload,
             )
 
@@ -143,7 +143,7 @@ class PayPalClient:
 
 
 class PayPalSandboxAdapter:
-    """Implémente ``PaymentAdapter`` au-dessus de l'API PayPal Sandbox."""
+    """Implements ``PaymentAdapter`` on top of the PayPal Sandbox API."""
 
     def __init__(self, client: PayPalClient) -> None:
         self._client = client
@@ -158,7 +158,7 @@ class PayPalSandboxAdapter:
         handler = handlers.get(action.tool)
         if handler is None:
             raise UnsupportedActionError(
-                f"L'adaptateur PayPal ne gère pas l'action {action.tool!r}."
+                f"The PayPal adapter does not handle the action {action.tool!r}."
             )
 
         result = handler(action)
@@ -191,7 +191,7 @@ class PayPalSandboxAdapter:
     def _create_invoice(self, action: ProposedAction) -> dict[str, Any]:
         if action.amount is None or not action.currency:
             raise UnsupportedActionError(
-                "create_invoice exige un montant et une devise."
+                "create_invoice requires an amount and a currency."
             )
 
         recipient_email = str(
@@ -199,8 +199,8 @@ class PayPalSandboxAdapter:
         )
         if "@" not in recipient_email:
             raise UnsupportedActionError(
-                "create_invoice exige metadata['recipient_email'] (adresse "
-                "e-mail du destinataire de la facture)."
+                "create_invoice requires metadata['recipient_email'] (the "
+                "invoice recipient's e-mail address)."
             )
 
         currency = action.currency
@@ -240,7 +240,7 @@ class PayPalSandboxAdapter:
         if not invoice_id:
             raise PayPalAPIError(
                 response.status_code,
-                "PayPal n'a renvoyé aucun identifiant de facture.",
+                "PayPal returned no invoice identifier.",
                 response.payload,
             )
 
@@ -264,7 +264,7 @@ class PayPalSandboxAdapter:
         capture_id = _require_metadata(action, "capture_id")
         if action.amount is None or not action.currency:
             raise UnsupportedActionError(
-                "refund_payment exige un montant et une devise."
+                "refund_payment requires an amount and a currency."
             )
 
         response = self._client.request(
@@ -275,7 +275,7 @@ class PayPalSandboxAdapter:
                     "value": f"{action.amount:.2f}",
                     "currency_code": action.currency,
                 },
-                "note_to_payer": str(action.reason or "Remboursement PayGuard")[:255],
+                "note_to_payer": str(action.reason or "PayGuard refund")[:255],
             },
             request_id=action.idempotency_key,
         )
@@ -292,7 +292,7 @@ def _require_metadata(action: ProposedAction, key: str) -> str:
     value = action.metadata.get(key)
     if not value:
         raise UnsupportedActionError(
-            f"{action.tool} exige metadata[{key!r}] pour joindre PayPal."
+            f"{action.tool} requires metadata[{key!r}] to call PayPal."
         )
     return str(value)
 

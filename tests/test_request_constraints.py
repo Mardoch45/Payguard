@@ -17,7 +17,7 @@ POLICY = load_policy(Path(__file__).parents[1] / "policies" / "policy.yaml")
 CONSTRAINTS = RequestConstraints(
     amount=5.00, currency="USD", beneficiary="sandbox-buyer-001", capture_id="CAPTURE-SELECTED"
 )
-REQUEST = UserRequest("Rembourse exactement 5 USD.", frozenset({"refund_payment"}), "request-5", CONSTRAINTS)
+REQUEST = UserRequest("Refund exactly 5 USD.", frozenset({"refund_payment"}), "request-5", CONSTRAINTS)
 ACTION = ProposedAction(
     "refund_payment", amount=5.00, currency="USD", beneficiary="sandbox-buyer-001",
     idempotency_key="refund-selected", metadata={"capture_id": "CAPTURE-SELECTED"},
@@ -91,7 +91,7 @@ def test_invalid_money_is_blocked_before_confirmation(amount) -> None:
 
 def test_a_policy_alias_does_not_authorize_a_different_invoice_email(tmp_path: Path) -> None:
     request = UserRequest(
-        "Prépare un brouillon de 5 USD pour buyer@example.test.", frozenset({"create_invoice"}), "invoice-5",
+        "Prepare a draft of 5 USD for buyer@example.test.", frozenset({"create_invoice"}), "invoice-5",
         RequestConstraints(amount=5, currency="USD", beneficiary="sandbox-buyer-001", recipient_email="buyer@example.test"),
     )
     action = ProposedAction(
@@ -110,7 +110,7 @@ def test_a_policy_alias_does_not_authorize_a_different_invoice_email(tmp_path: P
 
 def test_preparing_a_draft_does_not_authorize_sending_it() -> None:
     request = UserRequest(
-        "Prépare un brouillon.", frozenset({"create_invoice"}), "draft",
+        "Prepare a draft.", frozenset({"create_invoice"}), "draft",
         RequestConstraints(amount=5, currency="USD", beneficiary="sandbox-buyer-001", recipient_email="buyer@example.test"),
     )
     action = ProposedAction(
@@ -125,7 +125,7 @@ def test_preparing_a_draft_does_not_authorize_sending_it() -> None:
 @pytest.mark.parametrize("invoice_id", [None, "INV-OTHER"])
 def test_specific_invoice_read_cannot_switch_objects(invoice_id) -> None:
     request = UserRequest(
-        "Lis INV-SELECTED.", frozenset({"read_invoice"}), "read-selected", RequestConstraints(invoice_id="INV-SELECTED")
+        "Read INV-SELECTED.", frozenset({"read_invoice"}), "read-selected", RequestConstraints(invoice_id="INV-SELECTED")
     )
     result = evaluate_action(
         request, ProposedAction("read_invoice", metadata={"invoice_id": invoice_id}), POLICY, ProvenanceContext()

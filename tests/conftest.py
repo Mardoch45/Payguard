@@ -1,4 +1,4 @@
-"""Les tests utilisent leur propre configuration, jamais les clés du développeur."""
+"""Tests use their own configuration, never the developer's credentials."""
 
 from pathlib import Path
 

@@ -29,7 +29,7 @@ class FakeResponse:
 
 
 class FakeSession:
-    """Remplace requests.Session pour vérifier les appels sans réseau."""
+    """Replaces requests.Session to verify calls without network."""
 
     def __init__(self, responses: list[FakeResponse]) -> None:
         self.responses = list(responses)
@@ -93,10 +93,10 @@ def test_requests_never_follow_redirects() -> None:
 
     adapter.execute(ProposedAction(tool="list_invoices"))
 
-    assert session.calls, "le client doit avoir appelé PayPal"
+    assert session.calls, "the client must have called PayPal"
     assert all(
         call[2].get("allow_redirects") is False for call in session.calls
-    ), "chaque appel doit refuser les redirections"
+    ), "every call must refuse redirects"
 
 
 def test_invoice_listing_uses_oauth_token() -> None:

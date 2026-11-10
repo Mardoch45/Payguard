@@ -1,4 +1,4 @@
-"""Charge un document PayPal choisi par l'utilisateur avant l'appel au LLM."""
+"""Load a user-chosen PayPal document before the LLM call."""
 
 import json
 from pathlib import Path
@@ -18,13 +18,13 @@ def load_invoice_document(
     registry: IdempotencyRegistry,
     audit_path: str | Path,
 ) -> Document:
-    """Lecture contrôlée ; le contenu reçu ne devient jamais une autorisation."""
+    """Controlled read; the received content never becomes an authorization."""
     invoice_id = invoice_id.strip()
     if not invoice_id:
-        raise ValueError("Renseigne l'identifiant de la facture Sandbox.")
+        raise ValueError("Set the Sandbox invoice identifier.")
 
     request = UserRequest(
-        text=f"Charge la facture {invoice_id} pour la fournir au modèle.",
+        text=f"Load invoice {invoice_id} to provide it to the model.",
         requested_actions=frozenset({"read_invoice"}),
         request_id=f"invoice-context-{invoice_id}",
         constraints=RequestConstraints(invoice_id=invoice_id),
@@ -42,19 +42,19 @@ def load_invoice_document(
         audit_path,
     )
     if not outcome.executed:
-        raise ValueError(f"Lecture de la facture refusée : {outcome.policy_decision.reason}")
+        raise ValueError(f"Invoice read denied by policy: {outcome.policy_decision.reason}")
 
     result = outcome.result or {}
     if result.get("sandbox") is not True:
-        raise ValueError("La facture doit provenir de PayPal Sandbox.")
+        raise ValueError("The invoice must come from PayPal Sandbox.")
     invoice = result.get("invoice")
     if not isinstance(invoice, dict) or invoice.get("id") != invoice_id:
-        raise ValueError("PayPal n'a pas renvoyé la facture sélectionnée.")
+        raise ValueError("PayPal did not return the selected invoice.")
     note = invoice.get("note")
     if note is not None and not isinstance(note, str):
-        raise ValueError("La note de la facture PayPal est invalide.")
+        raise ValueError("The PayPal invoice note is invalid.")
 
-    # Les coordonnées du client ne sont pas nécessaires à ce parcours.
+    # Customer contact details are not needed for this workflow.
     content = {key: invoice.get(key) for key in (
         "id", "invoice_number", "status", "amount", "currency",
     )}

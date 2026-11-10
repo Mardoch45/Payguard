@@ -206,7 +206,7 @@ class FailingAdapter:
 
     def execute(self, action: ProposedAction) -> dict[str, str]:
         self.calls.append(action)
-        raise RuntimeError("PayPal a répondu 500 : boom")
+        raise RuntimeError("PayPal responded 500: boom")
 
 
 def test_execution_error_is_audited_without_leaking_the_message(tmp_path: Path) -> None:

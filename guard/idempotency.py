@@ -46,10 +46,11 @@ class IdempotencyRegistry:
 
 
 def derive_idempotency_key(request: UserRequest, action: ProposedAction) -> str:
-    """Clé déterministe calculée par l'application, jamais par le modèle.
+    """Deterministic key computed by the application, never by the model.
 
-    La même demande rejouée produit la même clé : l'anti-rejeu ne peut pas
-    être contourné en changeant la clé fournie par un appel d'outil.
+    Replaying the same request produces the same key: the anti-replay
+    protection cannot be bypassed by altering the key supplied with a
+    tool call.
     """
 
     material = json.dumps(

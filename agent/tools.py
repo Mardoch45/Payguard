@@ -1,14 +1,15 @@
-"""Schémas d'outils exposés au modèle.
+"""Tool schemas exposed to the model.
 
-``sources`` permet à l'agent d'expliquer les documents cités. La provenance
-de sécurité est établie côté application à partir des documents fournis.
-La clé d'idempotence n'est jamais exposée : le proxy la dérive lui-même.
+``sources`` lets the agent explain the documents it cited. The security
+provenance is established on the application side from the provided
+documents. The idempotency key is never exposed: the proxy derives it
+itself.
 """
 
 SOURCES_SCHEMA = {
     "type": "array",
     "items": {"type": "string"},
-    "description": "Identifiants des documents ayant motivé cette action.",
+    "description": "Identifiers of the documents that motivated this action.",
 }
 
 TOOL_SCHEMAS = [
@@ -16,7 +17,7 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "list_invoices",
-            "description": "Liste les factures PayPal du compte.",
+            "description": "Lists the PayPal invoices of the account.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -31,7 +32,7 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "read_invoice",
-            "description": "Lit le détail d'une facture PayPal.",
+            "description": "Reads the details of a PayPal invoice.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -46,7 +47,7 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "create_invoice",
-            "description": "Crée une facture PayPal pour un montant donné.",
+            "description": "Creates a PayPal invoice for a given amount.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -66,7 +67,7 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "refund_payment",
-            "description": "Rembourse un paiement capturé sur PayPal.",
+            "description": "Refunds a captured payment on PayPal.",
             "parameters": {
                 "type": "object",
                 "properties": {

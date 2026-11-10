@@ -813,8 +813,8 @@ def main() -> None:
         )
         if run.get("invoice_document"):
             st.caption(
-                "Source externe : facture lue dans PayPal Sandbox. "
-                "La lecture de préparation figure aussi dans le journal d'audit."
+                "External source: invoice read from PayPal Sandbox. "
+                "The preparation read appears in the audit log too."
             )
         if (
             proposal.mode == "llm"

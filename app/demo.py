@@ -1,4 +1,4 @@
-"""Exécution comparée : avec et sans le garde-fou PayGuard."""
+"""Side-by-side execution: with and without the PayGuard guard."""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,7 +27,7 @@ def run_without_protection(
     *,
     dry_run: bool = True,
 ) -> UnprotectedResult:
-    """Reproduit l'agent branché directement sur PayPal, sans garde-fou."""
+    """Reproduce the agent wired directly to PayPal, with no guard."""
 
     tool = proposal.action.tool
     if dry_run:
@@ -51,7 +51,7 @@ def run_with_protection(
     *,
     human_confirmed: bool = False,
 ) -> ExecutionOutcome:
-    """Fait passer la même action par la politique puis le proxy d'exécution."""
+    """Run the same action through the policy and then the execution proxy."""
 
     return process_action(
         proposal.request,

@@ -1,1 +1,1 @@
-"""Adaptateurs PayPal utilisés par le proxy d'exécution PayGuard."""
+"""PayPal adapters used by the PayGuard execution proxy."""

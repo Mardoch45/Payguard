@@ -76,9 +76,9 @@ def process_action(
 
     read_only = proposed_action.tool in READ_ONLY_TOOLS
     if not read_only:
-        # La clé effective est toujours dérivée par l'application à partir
-        # de la demande autorisée : une clé fournie par le modèle ne peut
-        # pas contourner la protection contre les doubles exécutions.
+        # The effective key is always derived by the application from the
+        # authorized request: a key supplied by the model cannot bypass
+        # the double-execution protection.
         proposed_action = replace(
             proposed_action,
             idempotency_key=derive_idempotency_key(user_request, proposed_action),
@@ -122,8 +122,8 @@ def process_action(
     try:
         execution_result = adapter.execute(proposed_action)
     except Exception as error:
-        # Une tentative qui échoue doit rester visible. On journalise le type
-        # d'erreur uniquement : le message brut peut contenir des données PayPal.
+        # A failed attempt must stay visible. Only the error type is logged:
+        # the raw message may contain PayPal data.
         _audit(
             audit_path,
             user_request,
@@ -156,7 +156,7 @@ def record_human_refusal(
     provenance: ProvenanceContext,
     audit_path: str | Path,
 ) -> None:
-    """Journalise le refus d'une opération confirmable avant tout appel adaptateur."""
+    """Audit-log the refusal of a confirmable operation before any adapter call."""
 
     write_audit_event(
         audit_path,

@@ -1,8 +1,8 @@
-"""Configuration locale de PayGuard.
+"""Local configuration for PayGuard.
 
-Le chargement ne dépend d'aucune librairie externe : un fichier `.env`
-minimal suffit. La seule contrainte de sécurité non négociable est que
-l'URL PayPal reste celle de la sandbox.
+Loading depends on no external library: a minimal `.env` file is enough.
+The only non-negotiable security constraint is that the PayPal URL stays
+pointed at the sandbox.
 """
 
 import os
@@ -20,28 +20,28 @@ DEFAULT_LLM_MODEL = "gemini-3.5-flash-lite"
 
 
 class ConfigurationError(ValueError):
-    """Configuration invalide ou dangereuse."""
+    """Invalid or unsafe configuration."""
 
 
 def validate_sandbox_base_url(base_url: str) -> str:
-    """N'accepte que l'hôte sandbox PayPal officiel, en HTTPS.
+    """Accept only the official PayPal sandbox host, over HTTPS.
 
-    Un simple sous-texte « sandbox » suffit à tromper une validation par
-    sous-chaîne : ``https://sandbox.evil.com`` ou ``https://evil.com/?u=sandbox``
-    seraient acceptés. La vérification porte donc sur le nom d'hôte exact.
+    A mere "sandbox" substring is enough to fool substring validation:
+    ``https://sandbox.evil.com`` or ``https://evil.com/?u=sandbox`` would
+    both be accepted. The check therefore targets the exact hostname.
     """
 
     parsed = urlparse(str(base_url))
     if parsed.scheme != "https" or parsed.hostname != SANDBOX_API_HOST:
         raise ConfigurationError(
-            "PayGuard n'accepte que l'hôte sandbox PayPal officiel en HTTPS : "
-            f"https://{SANDBOX_API_HOST} (URL reçue : {base_url!r})."
+            "PayGuard only accepts the official PayPal sandbox host over HTTPS: "
+            f"https://{SANDBOX_API_HOST} (received URL: {base_url!r})."
         )
     return base_url.rstrip("/")
 
 
 def load_env_file(path: str | Path = DEFAULT_ENV_PATH) -> None:
-    """Charge des paires KEY=VALUE sans écraser l'environnement existant."""
+    """Load KEY=VALUE pairs without overriding the existing environment."""
 
     env_path = Path(path)
     if not env_path.exists():
@@ -65,7 +65,7 @@ def load_env_file(path: str | Path = DEFAULT_ENV_PATH) -> None:
 
 @dataclass(frozen=True)
 class Settings:
-    """Paramètres runtime, tous optionnels sauf la contrainte sandbox."""
+    """Runtime settings, all optional except the sandbox constraint."""
 
     paypal_client_id: str = ""
     paypal_client_secret: str = ""
@@ -79,8 +79,8 @@ class Settings:
         validate_sandbox_base_url(self.paypal_base_url)
         if bool(self.paypal_client_id) != bool(self.paypal_client_secret):
             raise ConfigurationError(
-                "PAYPAL_CLIENT_ID et PAYPAL_CLIENT_SECRET doivent être "
-                "renseignés ensemble."
+                "PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET must be "
+                "set together."
             )
 
     @property
@@ -93,7 +93,7 @@ class Settings:
 
 
 def load_settings(env_path: str | Path = DEFAULT_ENV_PATH) -> Settings:
-    """Charge `.env` puis construit les paramètres validés."""
+    """Load the `.env` file, then build the validated settings."""
 
     load_env_file(env_path)
     audit_path = os.environ.get("PAYGUARD_AUDIT_PATH", "").strip()

@@ -6,7 +6,7 @@ from guard.provenance import DataSource, SourceType
 
 @dataclass(frozen=True)
 class Document:
-    """Texte lu par l'agent, étiqueté par sa provenance."""
+    """Text read by the agent, labeled with its provenance."""
 
     source_id: str
     source_type: SourceType
@@ -22,7 +22,7 @@ class Document:
 
 @dataclass(frozen=True)
 class AgentProposal:
-    """Action proposée par l'agent, avant toute décision de PayGuard."""
+    """Action proposed by the agent, before any PayGuard decision."""
 
     request: UserRequest
     action: ProposedAction

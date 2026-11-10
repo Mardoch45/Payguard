@@ -1,8 +1,8 @@
-"""Agent scripté : rejoue une proposition écrite à l'avance.
+"""Scripted agent: replays a proposal written in advance.
 
-Ce mode sert uniquement à la démonstration hors-ligne (sans clé LLM ni
-identifiants PayPal). Il ne remplace pas la mesure avec un vrai agent :
-les scénarios exécutés doivent rester identifiables comme scriptés.
+This mode is only used for the offline demonstration (no LLM key and no
+PayPal credentials). It does not replace measurement with a real agent:
+executed scenarios must remain identifiable as scripted.
 """
 
 from typing import Any, Mapping, Sequence

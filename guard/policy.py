@@ -217,10 +217,10 @@ def _validate_request_constraints(
         if constraints and constraints.invoice_id is not None:
             if not constraints.invoice_id:
                 return PolicyDecision(
-                    Decision.BLOCK, "Choisis d'abord la facture à lire.", "intent.missing_target"
+                    Decision.BLOCK, "Select the invoice to read first.", "intent.missing_target"
                 )
             if action.metadata.get("invoice_id") != constraints.invoice_id:
-                return _intent_block("invoice_id", "La facture proposée diffère de la facture choisie.")
+                return _intent_block("invoice_id", "The proposed invoice differs from the selected invoice.")
         return None
 
     if action.tool not in {"refund_payment", "create_invoice"}:
@@ -233,15 +233,15 @@ def _validate_request_constraints(
     ):
         return PolicyDecision(
             Decision.BLOCK,
-            "La demande doit préciser le montant, la devise et le bénéficiaire autorisés.",
+            "The request must specify the authorized amount, currency, and beneficiary.",
             "intent.missing_constraints",
         )
     if _money(action.amount) != _money(constraints.amount):
-        return _intent_block("amount", "Le montant proposé diffère du montant demandé.")
+        return _intent_block("amount", "The proposed amount differs from the requested amount.")
     if action.currency != constraints.currency:
-        return _intent_block("currency", "La devise proposée diffère de la devise demandée.")
+        return _intent_block("currency", "The proposed currency differs from the requested currency.")
     if action.beneficiary != constraints.beneficiary:
-        return _intent_block("beneficiary", "Le bénéficiaire proposé diffère du bénéficiaire demandé.")
+        return _intent_block("beneficiary", "The proposed beneficiary differs from the requested beneficiary.")
 
     if action.tool == "refund_payment":
         target_name = "capture_id"
@@ -255,17 +255,17 @@ def _validate_request_constraints(
         if action.metadata.get("send", False) and not constraints.send_invoice:
             return PolicyDecision(
                 Decision.BLOCK,
-                "L'envoi de la facture n'a pas été autorisé par l'utilisateur.",
+                "Sending the invoice was not authorized by the user.",
                 "intent.invoice_send_not_requested",
             )
     if not isinstance(expected, str) or not expected.strip():
         return PolicyDecision(
             Decision.BLOCK,
-            f"La demande doit préciser la cible autorisée : {target_name}.",
+            f"The request must specify the authorized target: {target_name}.",
             "intent.missing_target",
         )
     if actual != expected:
-        return _intent_block(target_name, "La cible PayPal proposée diffère de la cible choisie.")
+        return _intent_block(target_name, "The proposed PayPal target differs from the selected target.")
     return None
 
 
