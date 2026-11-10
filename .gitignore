@@ -7,3 +7,5 @@ __pycache__/
 !.env.example
 *.log
 data/audit.jsonl
+*.swp
+*.swo
