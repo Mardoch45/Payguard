@@ -23,7 +23,7 @@ from agent.llm import AgentError, LLMAgent  # noqa: E402
 from agent.models import AgentProposal, Document  # noqa: E402
 from agent.scripted import ScriptedAgent  # noqa: E402
 from app.demo import run_with_protection, run_without_protection  # noqa: E402
-from app.invoice_documents import load_invoice_document  # noqa: E402
+from app.invoice_documents import fetch_invoice_summaries, load_invoice_document  # noqa: E402
 from app.scenarios import Scenario, load_all_scenarios, prepare_sandbox_scenario  # noqa: E402
 from app.ui import (  # noqa: E402
     icon,
@@ -256,6 +256,46 @@ def render_sidebar(
         if adapter_label == "PayPal Sandbox":
             with st.expander("Sandbox payment details", expanded=True):
                 st.caption("Use the identifiers from your PayPal test account.")
+                if st.button("Load my invoices", key="load_invoice_list", use_container_width=True):
+                    st.session_state.pop("sandbox_invoice_options", None)
+                    st.session_state.pop("invoice_pick", None)
+                    st.session_state.pop("invoice_pick_loaded", None)
+                    try:
+                        with st.spinner("Listing your Sandbox invoices…"):
+                            st.session_state.sandbox_invoice_options = fetch_invoice_summaries(
+                                get_policy(), get_adapter("paypal"),
+                                get_registry("paypal"), settings.audit_path,
+                            )
+                    except Exception as error:
+                        st.error(f"Could not list the invoices: {error}")
+                options = st.session_state.get("sandbox_invoice_options") or []
+                if options:
+                    st.success(f"{len(options)} invoice(s) loaded from PayPal Sandbox.")
+                    query = st.text_input(
+                        "Filter", key="invoice_filter",
+                        placeholder="number, amount, status, recipient…",
+                    ).strip().lower()
+
+                    def invoice_label(summary: dict[str, Any]) -> str:
+                        name = summary.get("invoice_number") or summary.get("id") or "?"
+                        amount = f"{summary.get('amount', '?')} {summary.get('currency') or ''}".strip()
+                        recipient = summary.get("recipient_email") or "no recipient"
+                        return f"{name} — {amount} — {summary.get('status') or '?'} — {recipient}"
+
+                    filtered = [s for s in options if query in invoice_label(s).lower()]
+                    if filtered:
+                        chosen = st.selectbox(
+                            "Pick an invoice", filtered,
+                            format_func=invoice_label, key="invoice_pick",
+                        )
+                        if chosen and st.session_state.get("invoice_pick_loaded") != chosen.get("id"):
+                            st.session_state["invoice_pick_loaded"] = chosen.get("id")
+                            st.session_state["invoice_id"] = str(chosen.get("id") or "")
+                            if chosen.get("recipient_email"):
+                                st.session_state["recipient_email"] = str(chosen["recipient_email"])
+                        st.caption("Picking an invoice fills the fields below — the capture ID stays manual.")
+                    else:
+                        st.info("No invoice matches this filter.")
                 capture_id = st.text_input("Payment capture ID", key="capture_id", placeholder="Capture identifier…")
                 invoice_id = st.text_input("Invoice ID", key="invoice_id", placeholder="Invoice identifier…").strip()
                 recipient_email = st.text_input("Recipient email", key="recipient_email", placeholder="buyer@example.com…")
